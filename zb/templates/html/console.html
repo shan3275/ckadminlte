@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <title>CK Console</title>
+    <script src="{{ url_for('static', filename='echarts.min.js') }}"></script>
+</head>
+<body>
+    <h1 align="center">CK分发器控制台</h1>
+    <table id="table-4">
+        <tr>
+            <td width="600" align="left">
+                <li>共有 {{ g_stat['total'] }} 个CK, 取出{{ g_stat['take_out_cks'] }} 个CK</li>
+                <li>总请求数： {{ g_stat['req'] }}， 重复请求： {{ g_stat['rereq'] }} , 分配成功： {{ g_stat['asigned'] }} , 分配失败： {{ g_stat['none'] }}</li>
+                </br>
+                <li>启动时间：{{ g_stat['boot_ts'] }} </li>
+                <li>重置时间：{{ g_stat['reset_ts'] }} </li>
+            </td>
+            <td width="400" align="left">
+                <form action="/strapi/upload" enctype='multipart/form-data' method='POST'>
+                <input type="submit" value="  上传CK  ">
+                <input type="file" name="file">
+                </form>
+           			</br>
+                <form action="/admin/act_del" enctype='multipart/form-data' method='POST'>
+                <input type="submit" value="  删除CK  ">
+                <input type="text" name="date" size=18>
+                
+                </form>
+           			</br>
+                <form action="/admin/set_room_id" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="  设置房间id  ">
+                    <input name="room_id" size=18>
+                </form>
+           			</br>
+                <form action="/admin/set_room_cnzz" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="  设置统计链接  ">
+                    <input name="room_cnzz" size=80>
+                </form>
+            </td>
+            <td width="200" align="left">
+                  <form action="/admin/take_out_cks" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="  取出Cookies数量  ">
+                    <input name="ck_num" size=18>
+                </form>
+            </td>
+            <td width="100" align="left">
+                <form action="/admin/act_reset" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="分配重置">
+                </form>
+                </br>
+                <form action="/admin/act_clear" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="清空记录">
+                </form>
+            </td>
+            <td width="100" align="left">
+                <form action="/admin/act_save" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="保存记录">
+                </form>
+                </br>
+                
+                <form action="/admin/act_download" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="下载记录">
+                </form>
+            </td>
+            <td width="100" align="left">
+                <form action="/admin/act_random" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="随机记录">
+                </form>
+                </br>
+                <form action="/admin/act_loc" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="获取访问地">
+                </form>
+            </td>
+        </tr>
+    </table>
+    <h1> </h1>
+    
+		<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+		<div id="main" style="height:300px;margin: 0 auto;"></div>
+		
+		<script type="text/javascript">
+		
+		    // 基于准备好的dom，初始化echarts实例
+		    var myChart = echarts.init(document.getElementById('main'));
+		
+		    var   option = {
+		            title : {
+		                text: '获取CK分时统计',
+		                subtext: '最近两小时获取的CK的速度'
+		            },
+				        tooltip : {
+				            trigger: 'axis'
+				        },
+				        legend: {
+				            data:['获取CK']
+				        },
+				        toolbox: {
+				            show : true,
+				            feature : {
+				                mark : {show: true},
+				                dataView : {show: true, readOnly: false},
+				                magicType : {show: true, type: ['line', 'bar']},
+				                restore : {show: true},
+				                saveAsImage : {show: true}
+				            }
+				        },
+		        		calculable : true,
+				        xAxis : [
+				            {
+				                type : 'category',
+				                boundaryGap : false,
+				                data : [
+				                {% for ts in tarry %}
+				                	'{{ ts }} ',
+				               	{% endfor %}
+				                ]
+				            }
+				        ],
+				        yAxis : [
+				            {
+				                type : 'value',
+				                axisLabel : {
+				                    formatter: '{value}'
+				                }
+				            }
+				        ],
+				        series : [
+				            {
+				                name:'获取CK',
+				                type:'line',
+				                data:[
+				                {% for ds in darry %}
+				                	'{{ ds }} ',
+				               	{% endfor %}
+				               	],
+				                markPoint : {
+				                    data : [
+				                        {type : 'max', name: '最大值'},
+				                        {type : 'min', name: '最小值'}
+				                    ]
+				                },
+				            },
+				          
+				        ]
+		    };
+		
+		    // 使用刚指定的配置项和数据显示图表。
+		    myChart.setOption(option);
+		
+		</script>
+    <!--
+		<table id="table-1">
+			<tr><td width="1300" align="left">详细记录</td><td> </td></tr>
+		</table>
+	--!>
+    <!--
+    <hr style=" height:2px;border:none;border-top:2px dotted #185598;" />
+
+    <table id="table-1">
+    		<thread>
+        <tr>
+            <th width="50">No.</th>
+            <th width="100">昵称</th>
+            <th width="150">注册时间</th>
+            <th width="150">更新时间</th>
+            <th width="150">冷却时间</th>
+            <th width="100">IP</th>
+            <th width="150">获取时间</th>
+            <th width="650">CK</th>
+        </tr>
+      	</thread>
+        <tbody>
+    		{% for record in g_records %}
+			  
+        <tr>
+            <td><SMALL>{{ record['idx'] }} </small></td>
+            <td><SMALL>{{ record['nickname'] }} </small></td>
+            <td><SMALL>{{ record['regdate'] }} </small></td>
+            <td><SMALL>{{ record['lastdate'] }} </small></td>
+            <td><SMALL>{{ record['colddate'] }} </small></td>
+            <td><SMALL>{{ record['ip'] }} </small></td>
+            <td><SMALL>{{ record['fts'] }} </small></td>
+            <td><SMALL>{{ record['cookie'] }} </small></td>
+        </tr>
+    		{% endfor %}
+    	</tbody>
+    </table>
+ -->
+</body>
+</html>

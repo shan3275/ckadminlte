@@ -1,0 +1,7 @@
+2019-01-28 16:35:22,477 - DY - DEBUG - {'redis': {'passwd': 'haiyao', 'host': 'localhost', 'port': 6379}, 'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb', 'usertb': 'users'}}
+2019-01-28 16:36:20,836 - DY - DEBUG - {'redis': {'passwd': 'haiyao', 'host': 'localhost', 'port': 6379}, 'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb', 'usertb': 'users'}}
+2019-01-28 16:36:56,655 - DY - DEBUG - {'redis': {'passwd': 'haiyao', 'host': 'localhost', 'port': 6379}, 'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb', 'usertb': 'users'}}
+2019-01-28 16:37:59,070 - DY - INFO - select count(*) from cktb
+2019-01-28 16:37:59,090 - DY - DEBUG - query_count: (1,)
+2019-01-28 16:38:04,084 - DY - INFO - select count(*) from cktb
+2019-01-28 16:38:04,096 - DY - DEBUG - query_count: (1,)
