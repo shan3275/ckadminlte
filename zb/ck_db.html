@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <title>CK DATABASE</title>
+    <script src="{{ url_for('static', filename='echarts.min.js') }}"></script>
+</head>
+<body>
+    <h1 align="center">CKDB</h1>
+    <table id="table-4">
+        <tr>
+            <td width="600" align="left">
+                <li>共有 {{ g_stat['total'] }} 个record</li>
+                </br>
+            </td>
+            <td width="800" align="center">
+            	<!--
+                <form action="act_cycle" enctype='multipart/form-data' method='POST'>
+                <input type="submit" value="修改分配周期 ">
+                <input type="text" name="cycle" size="18">
+                </form>
+              -->
+                <form action="act_upload" enctype='multipart/form-data' method='POST'>
+                <input type="submit" value="  上传记录  ">
+                <input type="file" name="file">
+                </form>
+           			</br>
+            </td>
+            <td width="600" align="right">
+                <form action="act_save" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="保存记录">
+                </form>
+                </br>
+                
+                <form action="act_download" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="下载记录">
+                </form>
+            </td>
+        </tr>
+    </table>
+    
+     <table id="table-4">
+	<tr><td width="2000" align="left">筛选过滤</td><td> </td></tr>
+         <tr>
+            <td width="800" align="center">
+                <form action="act_select_rec" enctype='multipart/form-data' method='POST'>
+                    <!--li>level range：<input type="number" name="level_min" >  -  <input type="number" name="level_max"></li>
+                    <li>属性：<input type="radio" name="attr" value='New' checkd>new   <input type="radio" name="attr" value='old' checkd>Old </li>
+                    <li>valid：<input type="radio" name="valid" value='有效' checkd>有效   <input type="radio" name="valid" value='无效' checkd>无效 </li>
+                    -->
+                    <li>昵称：<input name="nickname"> </li>
+                    <input type="submit" value="提交">
+                </form>
+                </br>
+                <form action="act_cancel_filter" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="取消过滤">
+                </form>
+           </td>
+        </tr>
+	<tr><td width="2000" align="left"></td><td> </td></tr>
+     </table>
+    <h1> </h1>
+    
+		<table id="table-1">
+			<tr><td width="2000" align="left">详细记录</td><td> </td></tr>
+		</table>
+    <!--
+    <hr style=" height:2px;border:none;border-top:2px dotted #185598;" />
+    -->
+    <table id="table-1">
+    		<thread>
+        <tr>
+            <th width="50">No.</th>
+            <th width="120">昵称</th>
+            <th width="50">Level</th>
+            <th width="50">属性</th>
+            <th width="100">valid</th>
+            <th width="100">注册日期</th>
+            <th width="100">跟新日期</th>
+            <th width="650">CK</th>
+        </tr>
+      	</thread>
+        <tbody>
+    		{% for record in g_records %}
+			  
+        <tr>
+            <td><SMALL>{{ record['seq'] }} </small></td>
+            <td><SMALL>{{ record['nn'] }} </small></td>
+            <td><SMALL>{{ record['level'] }} </small></td>
+            <td><SMALL>{{ record['attr'] }} </small></td>
+            <td><SMALL>{{ record['vaild'] }} </small></td>
+            <td><SMALL>{{ record['signup_date'] }} </small></td>
+            <td><SMALL>{{ record['update_date'] }} </small></td>
+            <td><SMALL>{{ record['cookie'] }} </small></td>
+        </tr>
+    		{% endfor %}
+    	</tbody>
+    </table>
+</body>
+</html>
