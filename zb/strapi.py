@@ -12,6 +12,7 @@ import time,datetime
 import base64
 import globalvar as gl
 import libdb as libdb
+import libredis as libredis
 
 global logger
 global CONF
@@ -21,20 +22,24 @@ def cookie_csv_parse(line):
     if len(row) < 3:
         return None
 
-    if row[0] == "" or row[0] == "名称":
+    if row[0] == "" or row[0] == "ID":
         return None
 
     # 名称,密码,Cookies
     record  = {}
-    record['nickname']    = row[0]
-    record['password']    = row[1]
-    record['cookie']      = row[2]
+    record['id']          = row[0]
+    record['nickname']    = row[1]
+    record['password']    = row[2]
+    record['cookie']      = row[7]
+    record['uptime']      = row[8]
+    record['regtime']     = row[9]
     return record
 
 def cookie_load(path):
     FILE = open(path, 'rb')
     records =[]
     seq = 0
+    timestr = time.strftime('%Y%m%d%H%M%S')
     for line in FILE:
         if '\xef\xbb\xbf' in line:
             logger.info('用replace替换掉\\xef\\xbb\\xb')
@@ -50,6 +55,8 @@ def cookie_load(path):
             continue
 
         record['seq'] = seq
+        seqstr = "%06d" % seq
+        record['nickname'] = record['nickname'] + timestr + seqstr
         records.append(record)
         seq += 1
     logger.debug("%d cookies loaded from %s!" ,len(records), path)
@@ -110,6 +117,50 @@ def writeFileToDB(file):
             ou['msg']   = '写数据库失败'
     return ou
 
+
+def writeFileToRedis(file):
+    """
+    将cooikes csv文件写入数据库
+    :param file: cookie文件描述符
+    :return:   ou  ：字典，包含信息
+               ou['data']['num']  :成功数量
+               ou['msg']                :信息
+               ou['error']              : 0 ok
+                                        : 1 写数据库失败
+    """
+    basepath = os.path.dirname(__file__)  # 当前文件所在路径
+    upload_path = os.path.join(basepath, 'uploads', secure_filename(file.filename))  # 注意：没有的文件夹一定要先创建，不然会提示没有该路径
+    file.save(upload_path)
+
+    # 读取文件
+    logger.debug("upload_path: %s", upload_path)
+    records = cookie_load(upload_path)
+    logger.debug('cookie num:%d', len(records))
+
+    #写入数据库
+    crack = libredis.LibRedis()
+    for record in records:
+        #cookie写入redis
+        rv = crack.hashMSet(record['nickname'], record)
+        if rv != True:
+            logger.info('write to redis fail %s', record)
+        #ck名称集合，写入redis
+        rv = crack.setAdd(CONF['redis']['const'], record['nickname'])
+        if rv != True:
+            logger.info('repeat,write ck nickanme set to redis fail')
+
+    #将cknnsetconst 复制一份，作为获取ck时的中间变量。
+    rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
+    if rv == 0:
+        logger.info('copy ck nickname set fail')
+
+    #更新g_stat total  变量
+    Digit = crack.setCard(CONF['redis']['const'])
+    crack.hashSet('g_stat', 'total', Digit)
+
+    logger.info('更新 redis g_stat total success!')
+    return True
+
 strapi_bp = Blueprint('strapi', __name__, template_folder='templates/html')
 
 @strapi_bp.route('/upload', methods=['POST', 'GET'])
@@ -122,8 +173,8 @@ def upload():
     logger.debug('request.files:%s', request.files['file'])
     if request.method == 'POST':
         #保存文件
-        ou = writeFileToDB(request.files['file'])
-        if ou['error'] == 0 :
+        ou = writeFileToRedis(request.files['file'])
+        if ou == True :
             return redirect(url_for('stradmin.admin'))
         else:
             return json.dumps(ou)

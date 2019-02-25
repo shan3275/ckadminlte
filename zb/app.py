@@ -40,13 +40,13 @@ CUR_PORT = DEF_PORT
 app = Flask(__name__)
 app.register_blueprint(strapi_bp,   url_prefix='/strapi')
 app.register_blueprint(stradmin_bp, url_prefix='/admin')
-app.register_blueprint(charts_bp, url_prefix='/charts')
-app.register_blueprint(forms_bp, url_prefix='/forms')
-app.register_blueprint(examples_bp, url_prefix='/examples')
-app.register_blueprint(layout_bp, url_prefix='/layout')
-app.register_blueprint(mailbox_bp, url_prefix='/mailbox')
-app.register_blueprint(tables_bp, url_prefix='/tables')
-app.register_blueprint(ui_bp, url_prefix='/ui')
+#app.register_blueprint(charts_bp, url_prefix='/charts')
+#app.register_blueprint(forms_bp, url_prefix='/forms')
+#app.register_blueprint(examples_bp, url_prefix='/examples')
+#app.register_blueprint(layout_bp, url_prefix='/layout')
+#app.register_blueprint(mailbox_bp, url_prefix='/mailbox')
+#app.register_blueprint(tables_bp, url_prefix='/tables')
+#app.register_blueprint(ui_bp, url_prefix='/ui')
 
 # set the secret key.  keep this really secret:
 app.secret_key = '\xe5\xcc\xc5\xd9+\xfbC\xc6\xdbD\x1af\xe0\xa6*\xeb$\xa7\xe4\xf6p~\x01\xaf'
@@ -58,10 +58,12 @@ g_cnt = {}
 @app.route('/')
 def index():
     #return 'Logged in as: %s' % current_user.get_id()
-    if 'username' in session:
-        return render_template('index.html', g_stat=g_stat)
-    else:
-        return redirect(url_for('login'))
+    #if 'username' in session:
+    #    return render_template('index.html', g_stat=g_stat)
+    #else:
+    #    return redirect(url_for('login'))
+    return "Hello World"
+"""
 
 @app.route('/index2')
 def index2():
@@ -140,6 +142,7 @@ def calendar():
 @app.route('/test/<username>')
 def test(username):
     return redirect(url_for(username))
+"""
 
 if __name__ == '__main__':
     reload(sys)

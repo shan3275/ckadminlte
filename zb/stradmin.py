@@ -13,7 +13,8 @@ import datetime
 import urllib
 import random
 import globalvar as gl
-import libdb as libdb
+import libdb    as libdb
+import libredis as libredis
 
 global logger
 global CONF
@@ -30,6 +31,27 @@ g_cnt = {}
 g_dy_room_id = "3326206"
 g_dy_room_cnzz = "https://s19.cnzz.com/z_stat.php?id=1274369776&web_id=1274369776"
 
+
+def gstat_init():
+    """
+    g_stat 变量初始化，在redis中
+    :return:
+    """
+    crack = libredis.LibRedis()
+    rv = crack.hashExists('g_stat', 'total')
+    if rv == True:
+        logger.info('g_stat exist in redis, init exit')
+        return True
+
+    logger.info('g_stat no exist, now init')
+    #不存在，故初始化
+    rv = crack.hashMSet('g_stat', g_stat)
+    if rv != True:
+        logger.error('g_stat write redis fail')
+        return False
+    logger.info("g_stat write redis success!")
+    return True
+
 def save_records(path):
     file = open(path, "w")
     CNT = 0
@@ -40,21 +62,44 @@ def save_records(path):
     print "%d records save to %s" %(CNT, path)
 
 def gstat_clear():
-    g_stat['pos'] = 0
-    g_stat['asigned'] = 0
-    g_stat['req'] = 0
-    g_stat['rereq'] = 0
-    g_stat['none'] = 0
-    g_stat['reset_ts'] = now()
+    stat = dict()
+    stat['pos'] = 0
+    stat['asigned'] = 0
+    stat['req'] = 0
+    stat['rereq'] = 0
+    stat['none'] = 0
+    stat['reset_ts'] = now()
+    crack = libredis.LibRedis()
+    crack.hashMSet('g_stat', stat)
 
 def clear_records():
-    global g_records, g_stat
+    #reset 用户记录
+    reset_records()
+
+    #清空ck
     CNT = 0
-    g_records = []
-    # g_stat = {"cycle":1, "total":0, "asigned":0, "req":0, "rereq":0, "boot_ts": now(), "reset_ts":""
-    g_stat['take_out_cks'] = 0
-    gstat_clear()
-    logger.debug("all records clean!!.")
+    crack = libredis.LibRedis()
+    key = " uptime seq cookie regtime id password nickname"
+    while crack.setCard(CONF['redis']['const']) > 0:
+        nickname = crack.setSpop(CONF['redis']['const'])
+        if nickname != None:
+            record = crack.hashGetAll(nickname)
+            if record == None:
+                continue
+            CNT += 1
+            rv = crack.hashDel(nickname, *record.keys())
+            logger.info('clear nickname(%s) cookie hash rv(%d)', nickname, rv)
+
+    while crack.setCard(CONF['redis']['live']) > 0:
+        nickname = crack.setSpop(CONF['redis']['live'])
+        if nickname != None:
+            logger.info('del redis live set: nickname(%s)', nickname)
+
+    #更新g_stat total  变量
+    Digit = crack.setCard(CONF['redis']['const'])
+    crack.hashSet('g_stat', 'total', Digit)
+
+    logger.info("%d cookie records clean.", CNT)
 
 def def_file_get():
     path = "download/"+"def_%d.txt" %(CUR_PORT)
@@ -82,17 +127,26 @@ def update_loc():
                 records['loc'] = ip_loc(records['ip'])
 
 def reset_records():
-    global g_records, g_stat
     CNT = 0
-    for record in g_records:
-        if record['ip'] != "":
-            record['ip']  = ""
-            record['loc']  = ""
-            record['fts']  = ""
-            #record['cts'] = now()
-            CNT += 1
     gstat_clear()
-    print "%d records reset." %(CNT)
+
+    crack = libredis.LibRedis()
+    while crack.setCard(CONF['redis']['user']) > 0:
+        ip = crack.setSpop(CONF['redis']['user'])
+        if ip != None:
+            len = crack.hashHlen(ip)
+            if len == 0:
+                continue
+            record = crack.hashGetAll(ip)
+            CNT += 1
+            rv = crack.hashDel(ip, *record.keys())
+            logger.info('reset user(%s) hash rv(%d)', ip,rv)
+
+    #将cknnsetconst 复制一份，作为获取ck时的中间变量。
+    rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
+    if rv == 0:
+        logger.info('copy ck nickname set fail')
+    logger.info("%d records reset." ,CNT)
     return CNT
 
 def cookie_append(records):
@@ -190,14 +244,14 @@ def act_reset():
 
     return redirect(url_for('stradmin.admin'))
 
-@stradmin_bp.route('/act_save', methods=['POST', 'GET'])
+#@stradmin_bp.route('/act_save', methods=['POST', 'GET'])
 def act_save():
     file = def_file_get()
     CNT = save_records(file)
 
     return redirect(url_for('stradmin.admin'))
 
-@stradmin_bp.route("/act_download", methods=['POST', 'GET'])
+#@stradmin_bp.route("/act_download", methods=['POST', 'GET'])
 def download():
     # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
     directory = os.getcwd()  # 假设在当前目录
@@ -250,27 +304,9 @@ def take_cks_by_id():
 
 @stradmin_bp.route('/', methods=['POST', 'GET'])
 def admin():
-    global g_records, g_stat, g_cnt
-    tarry  = []
-    darry = []
     #获取表项数量
-    count = libdb.LibDB().query_count(CONF['database']['table'])
-    if count != False:
-        Digit = count[0]
-    else:
-        Digit = '0'
-    g_stat['total'] = Digit
-    st = datetime.datetime.now() + datetime.timedelta(minutes=-120)
-    for i in range(0, 121):
-        sn = st + datetime.timedelta(minutes=i)
-        ts = sn.strftime("%H:%M")
-        tarry.append(ts)
-        if g_cnt.has_key(ts):
-            darry.append(g_cnt[ts])
-        else:
-            darry.append(0)
-    return render_template("index.html",  g_stat=g_stat)
-    #return render_template("console.html", g_records=g_records, g_stat=g_stat, tarry=tarry, darry=darry)
+    stat  = libredis.LibRedis().hashGetAll('g_stat')
+    return render_template("console.html", g_stat=stat)
 
 @stradmin_bp.route('/room', methods=['POST', 'GET'])
 def room():
@@ -280,60 +316,74 @@ def room():
 
     return render_template("jump.html", g_dy_room_id=g_dy_room_id, g_dy_room_cnzz=g_dy_room_cnzz)
 
-
-def get_min():
-    str = time.strftime("%H:%M", time.localtime())
-    return str
-def g_cnt_inc(m):
-    global g_cnt
-
-    if g_cnt.has_key(m):
-        g_cnt[m] = g_cnt[m] + 1
-    else:
-        g_cnt[m] = 1
-
-    #print "g_cnt: ", g_cnt
-
 def fetch_record(ip):
-    global g_records, g_stat
-    if g_stat['pos'] < g_stat['take_out_cks']:
-        g_records[g_stat['pos']]['ip'] = ip
-        g_records[g_stat['pos']]['loc'] = ""
-        g_records[g_stat['pos']]['fts'] = now()
-        g_records[g_stat['pos']]['cnt'] +=1
-        record = g_records[g_stat['pos']]
-        g_stat['pos'] +=1
-        return record
+    crack = libredis.LibRedis()
+    num = crack.setCard(CONF['redis']['live'])
+    if num == 0:
+        logger.info('cookie has used over, fecth record fail')
+        return None
 
-    return None
+    nickname = crack.setSpop(CONF['redis']['live'])
+    if nickname == None:
+        logger.error('fetch record get nickname null!!')
+        return None
+
+    user = dict(nickname=nickname,loc='',fts=now(),cnt=1)
+    rv   = crack.hashMSet(ip,user)
+    if rv != True:
+        logger.error('write user record fail!!')
+
+    #ck名称集合，写入redis
+    rv = crack.setAdd(CONF['redis']['user'], ip)
+    if rv != True:
+        logger.info('write ck nickanme set to redis fail')
+
+    #获取cookie
+    record = crack.hashGetAll(nickname)
+    if record == None:
+        logger.error('cookie record not existed nickname:%s', nickname)
+        return None
+
+    return record
 
 def get_record(ip):
-    global g_records;
-    for record in g_records:
-        #logger.debug("record['ip']:%s, ip:%s", record['ip'], ip)
-        if record['ip'] == ip:
-            return record
-
-    return None
+    crack = libredis.LibRedis()
+    len = crack.hashHlen(ip)
+    if len == 0:
+        return None
+    record = crack.hashGetAll(ip)
+    if record.has_key('nickname') ==False:
+        return None
+    nickname = record['nickname']
+    len = crack.hashHlen(nickname)
+    if len == 0:
+        return None
+    record = crack.hashGetAll(nickname)
+    logger.info(record)
+    return record
 
 @stradmin_bp.route('/cookie',methods=['GET'])
 def cookie():
-    m = get_min()
-    g_cnt_inc(m)
-    ip = request.remote_addr
-    g_stat['req'] += 1
+    if CONF['test'] != True:
+        ip = request.remote_addr
+    else:
+        ip = request.args.get('ip')
+        if ip == None:
+            ip = '127.0.0.1'
+    crack = libredis.LibRedis()
+    crack.hashincr('g_stat','req')
     record = get_record(ip)
     if record == None:
         record = fetch_record(ip)
     else:
-        g_stat['rereq'] += 1
+        crack.hashincr('g_stat','rereq')
 
     if record == None:
         cookie = "None"
-        g_stat['none'] += 1
+        crack.hashincr('g_stat','none')
     else:
         cookie = record['cookie']
-        g_stat['asigned'] += 1
+        crack.hashincr('g_stat','asigned')
 
     rep = {'ip':ip, 'cookie': cookie}
     #logger.debug(rep)
@@ -342,3 +392,6 @@ def cookie():
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()
+if gstat_init() != True:
+    print('gstat init fail, exit!')
+    os._exit(0)
