@@ -364,12 +364,13 @@ def get_record(ip):
 
 @stradmin_bp.route('/cookie',methods=['GET'])
 def cookie():
-    if CONF['test'] != True:
-        ip = request.remote_addr
-    else:
+    debug =  request.args.get('debug')
+    if debug != None:
         ip = request.args.get('ip')
         if ip == None:
             ip = '127.0.0.1'
+    else:
+        ip = request.remote_addr
     crack = libredis.LibRedis()
     crack.hashincr('g_stat','req')
     record = get_record(ip)
