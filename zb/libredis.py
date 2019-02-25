@@ -14,9 +14,10 @@ global CONF
 global logger
 
 class LibRedis():
-    def __init__(self):
-        #self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=db, password=CONF['redis']['password'])
-        self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=CONF['redis']['db'])
+    def __init__(self,user=0):
+        db = user % 16
+        self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=db)
+        #self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=CONF['redis']['db'])
 
     def strSet(self, key, value):
         """

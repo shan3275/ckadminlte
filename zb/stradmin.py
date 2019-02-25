@@ -37,19 +37,21 @@ def gstat_init():
     g_stat 变量初始化，在redis中
     :return:
     """
-    crack = libredis.LibRedis()
-    rv = crack.hashExists('g_stat', 'total')
-    if rv == True:
-        logger.info('g_stat exist in redis, init exit')
-        return True
+    for i in range(0, 16):
+        crack = libredis.LibRedis(i)
+        rv = crack.hashExists('g_stat', 'total')
+        if rv == True:
+            logger.info('g_stat exist in db%d redis, init exit', i)
+            continue
 
-    logger.info('g_stat no exist, now init')
-    #不存在，故初始化
-    rv = crack.hashMSet('g_stat', g_stat)
-    if rv != True:
-        logger.error('g_stat write redis fail')
-        return False
-    logger.info("g_stat write redis success!")
+        logger.info('g_stat no exist in db%d, now init', i)
+        #不存在，故初始化
+        rv = crack.hashMSet('g_stat', g_stat)
+        if rv != True:
+            logger.error('g_stat write redis in db%d fail', i)
+            return False
+        logger.info("g_stat write redis db%d success!", i)
+
     return True
 
 def save_records(path):
@@ -61,7 +63,7 @@ def save_records(path):
     file.close()
     print "%d records save to %s" %(CNT, path)
 
-def gstat_clear():
+def gstat_clear(userId):
     stat = dict()
     stat['pos'] = 0
     stat['asigned'] = 0
@@ -69,16 +71,16 @@ def gstat_clear():
     stat['rereq'] = 0
     stat['none'] = 0
     stat['reset_ts'] = now()
-    crack = libredis.LibRedis()
+    crack = libredis.LibRedis(userId)
     crack.hashMSet('g_stat', stat)
 
-def clear_records():
+def clear_records(userId):
     #reset 用户记录
-    reset_records()
+    reset_records(userId)
 
     #清空ck
     CNT = 0
-    crack = libredis.LibRedis()
+    crack = libredis.LibRedis(userId)
     key = " uptime seq cookie regtime id password nickname"
     while crack.setCard(CONF['redis']['const']) > 0:
         nickname = crack.setSpop(CONF['redis']['const'])
@@ -126,11 +128,11 @@ def update_loc():
             if records['loc'] == "" or records['loc'] == "Fail":
                 records['loc'] = ip_loc(records['ip'])
 
-def reset_records():
+def reset_records(userId):
     CNT = 0
-    gstat_clear()
+    gstat_clear(userId)
 
-    crack = libredis.LibRedis()
+    crack = libredis.LibRedis(userId)
     while crack.setCard(CONF['redis']['user']) > 0:
         ip = crack.setSpop(CONF['redis']['user'])
         if ip != None:
@@ -234,15 +236,26 @@ def act_del():
 
 @stradmin_bp.route('/act_clear', methods=['POST', 'GET'])
 def act_clear():
-    CNT = clear_records()
-
-    return redirect(url_for('stradmin.admin'))
+    userIdStr = request.args.get('user')
+    if userIdStr != None:
+        userId = int(userIdStr)
+    else:
+        #default 0
+        userId = 0
+    CNT = clear_records(userId)
+    return redirect(url_for('stradmin.admin',user=userId))
 
 @stradmin_bp.route('/act_reset', methods=['POST', 'GET'])
 def act_reset():
-    CNT = reset_records()
+    userIdStr = request.args.get('user')
+    if userIdStr != None:
+        userId = int(userIdStr)
+    else:
+        #default 0
+        userId = 0
+    CNT = reset_records(userId)
 
-    return redirect(url_for('stradmin.admin'))
+    return redirect(url_for('stradmin.admin',user=userId))
 
 #@stradmin_bp.route('/act_save', methods=['POST', 'GET'])
 def act_save():
@@ -304,9 +317,15 @@ def take_cks_by_id():
 
 @stradmin_bp.route('/', methods=['POST', 'GET'])
 def admin():
+    userIdStr = request.args.get('user')
+    if userIdStr != None:
+        userId = int(userIdStr)
+    else:
+        #default 0
+        userId = 0
     #获取表项数量
-    stat  = libredis.LibRedis().hashGetAll('g_stat')
-    return render_template("console.html", g_stat=stat)
+    stat  = libredis.LibRedis(userId).hashGetAll('g_stat')
+    return render_template("console.html", g_stat=stat,user=userId)
 
 @stradmin_bp.route('/room', methods=['POST', 'GET'])
 def room():
@@ -316,8 +335,8 @@ def room():
 
     return render_template("jump.html", g_dy_room_id=g_dy_room_id, g_dy_room_cnzz=g_dy_room_cnzz)
 
-def fetch_record(ip):
-    crack = libredis.LibRedis()
+def fetch_record(ip, userId):
+    crack = libredis.LibRedis(userId)
     num = crack.setCard(CONF['redis']['live'])
     if num == 0:
         logger.info('cookie has used over, fecth record fail')
@@ -346,8 +365,8 @@ def fetch_record(ip):
 
     return record
 
-def get_record(ip):
-    crack = libredis.LibRedis()
+def get_record(ip,userId):
+    crack = libredis.LibRedis(userId)
     len = crack.hashHlen(ip)
     if len == 0:
         return None
@@ -371,11 +390,17 @@ def cookie():
             ip = '127.0.0.1'
     else:
         ip = request.remote_addr
-    crack = libredis.LibRedis()
+    userIdStr = request.args.get('user')
+    if userIdStr != None:
+        userId = int(userIdStr)
+    else:
+        #default 0
+        userId = 0
+    crack = libredis.LibRedis(userId)
     crack.hashincr('g_stat','req')
-    record = get_record(ip)
+    record = get_record(ip,userId)
     if record == None:
-        record = fetch_record(ip)
+        record = fetch_record(ip, userId)
     else:
         crack.hashincr('g_stat','rereq')
 

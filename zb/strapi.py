@@ -118,7 +118,7 @@ def writeFileToDB(file):
     return ou
 
 
-def writeFileToRedis(file):
+def writeFileToRedis(file,userId):
     """
     将cooikes csv文件写入数据库
     :param file: cookie文件描述符
@@ -138,7 +138,7 @@ def writeFileToRedis(file):
     logger.debug('cookie num:%d', len(records))
 
     #写入数据库
-    crack = libredis.LibRedis()
+    crack = libredis.LibRedis(userId)
     for record in records:
         #cookie写入redis
         rv = crack.hashMSet(record['nickname'], record)
@@ -171,16 +171,23 @@ def upload():
     """
     logger.debug('request.method:%s', request.method)
     logger.debug('request.files:%s', request.files['file'])
+    userIdStr = request.args.get('user')
+    if userIdStr != None:
+        userId = int(userIdStr)
+    else:
+        # default 0
+        userId = 0
+    logger.debug('upload user=%d', userId)
     if request.method == 'POST':
         #保存文件
-        ou = writeFileToRedis(request.files['file'])
+        ou = writeFileToRedis(request.files['file'],userId)
         if ou == True :
-            return redirect(url_for('stradmin.admin'))
+            return redirect(url_for('stradmin.admin',user=userId))
         else:
             return json.dumps(ou)
 
     else:
-        return redirect(url_for('stradmin.admin'))
+        return redirect(url_for('stradmin.admin',user=userId))
 
 
 def str_to_timestamp(str):
