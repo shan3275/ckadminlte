@@ -374,7 +374,6 @@ def http_do_action(action):
 def http_do():
     """
     api 接口
-
     """
     if request.method != 'POST':
         return 'hello'
