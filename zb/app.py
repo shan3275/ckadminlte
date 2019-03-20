@@ -42,13 +42,6 @@ app = Flask(__name__)
 app.register_blueprint(strapi_bp,   url_prefix='/strapi')
 app.register_blueprint(useradmin_bp, url_prefix='/useradmin')
 app.register_blueprint(stradmin_bp, url_prefix='/admin')
-#app.register_blueprint(charts_bp, url_prefix='/charts')
-#app.register_blueprint(forms_bp, url_prefix='/forms')
-#app.register_blueprint(examples_bp, url_prefix='/examples')
-#app.register_blueprint(layout_bp, url_prefix='/layout')
-#app.register_blueprint(mailbox_bp, url_prefix='/mailbox')
-#app.register_blueprint(tables_bp, url_prefix='/tables')
-#app.register_blueprint(ui_bp, url_prefix='/ui')
 
 # set the secret key.  keep this really secret:
 app.secret_key = '\xe5\xcc\xc5\xd9+\xfbC\xc6\xdbD\x1af\xe0\xa6*\xeb$\xa7\xe4\xf6p~\x01\xaf'
