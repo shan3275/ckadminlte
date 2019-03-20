@@ -4,10 +4,19 @@ V3版本：
 1.cookie可以直接存储在数据库mysql中；
 2.可以自动更新cookie；
 3.可以自动添加cookie；
-未实现功能：
-1.多用户功能
+4.多用户功能,支持多用户，通过url参数区分，最多16个用户。 
+user0： http://192.168.100.133:8889/useradmin?user=0 http://192.168.100.133:8889/useradmin/cookie?user=0
+user1:  http://192.168.100.133:8889/useradmin?user=1 http://192.168.100.133:8889/useradmin/cookie?user=1
+user15: http://192.168.100.133:8889/useradmin?user=15 http://192.168.100.133:8889/useradmin/cookie?user=15
+5.用户的cookie可以直接存储在redis db中；
+6.支持提交任务；
+启动命令：
+/usr/bin/python /usr/bin/gunicorn -w 10 -b :8200 -t 300 app:app
 
-
+任务分发模块：
+1.使用tcp方式；
+2.支持并发模式；
+3.用户端直接请求任务，然后从管理后台获取cookie
 
 ---------------------------------------------------------------------------------
 V1版本特征及问题：

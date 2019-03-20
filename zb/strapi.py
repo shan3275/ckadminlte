@@ -12,106 +12,13 @@ import time,datetime
 import base64
 import globalvar as gl
 import libdb as libdb
+import libredis as libredis
+import libcommon as libcommon
 
 global logger
 global CONF
 
-def cookie_csv_parse(line):
-    row = line.split(',')
-    if len(row) < 3:
-        return None
-
-    if row[0] == "" or row[0] == "名称":
-        return None
-
-    # 名称,密码,Cookies
-    record  = {}
-    record['nickname']    = row[0]
-    record['password']    = row[1]
-    record['cookie']      = row[2]
-    return record
-
-def cookie_load(path):
-    FILE = open(path, 'rb')
-    records =[]
-    seq = 0
-    for line in FILE:
-        if '\xef\xbb\xbf' in line:
-            logger.info('用replace替换掉\\xef\\xbb\\xb')
-            line = line.replace('\xef\xbb\xbf', '')  # 用replace替换掉'\xef\xbb\xbf'
-        line = line.strip('\n')
-        cdet = chardet.detect(line)
-        if cdet['encoding'].lower().find("utf-8") == 0 :
-            u8str = line
-        else:
-            u8str = line.decode('GBK').encode("utf8")
-        record = cookie_csv_parse(u8str)
-        if record == None:
-            continue
-
-        record['seq'] = seq
-        records.append(record)
-        seq += 1
-    logger.debug("%d cookies loaded from %s!" ,len(records), path)
-    return records
-
-def cookieWriteToDB(nickname, pwd, cookie):
-    key = "nickname, password, regdate, lastdate, colddate, cookie"
-    value = "'%s', '%s', '%d', '%d', '%d', '%s'" % (nickname, pwd, \
-                                                    int(time.time()), int(time.time()), \
-                                                    int(time.time()), cookie)
-    logger.debug('key:%s, value:%s', key, value)
-    rv = libdb.LibDB().insert_db(key, value, CONF['database']['table'])
-    return rv
-
-def updateFailWriteToDB(nickname, update_fail):
-    if update_fail == 'update_fail':
-        setval = "update_fail=update_fail+1"
-    else:
-        return False
-    condition = "nickname='%s'" %(nickname)
-    logger.debug('setval:%s, condition:%s', setval, condition)
-    rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
-    return rv
-
-def cookieUpdateToDB(nickname, pwd, cookie):
-    setval = "password='%s',lastdate='%d',cookie='%s',update_fail=0" %(pwd, int(time.time()), cookie)
-    condition = "nickname='%s'" %(nickname)
-    logger.debug('setval:%s, condition:%s', setval, condition)
-    rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
-    return rv
-
-def writeFileToDB(file):
-    """
-    将cooikes csv文件写入数据库
-    :param file: cookie文件描述符
-    :return:   ou  ：字典，包含信息
-               ou['data']['num']  :成功数量
-               ou['msg']                :信息
-               ou['error']              : 0 ok
-                                        : 1 写数据库失败
-    """
-    ou = dict(error=0, data=dict(), msg='ok')
-    basepath = os.path.dirname(__file__)  # 当前文件所在路径
-    upload_path = os.path.join(basepath, 'uploads', secure_filename(file.filename))  # 注意：没有的文件夹一定要先创建，不然会提示没有该路径
-    file.save(upload_path)
-
-    # 读取文件
-    logger.debug("upload_path: %s", upload_path)
-    records = cookie_load(upload_path)
-    logger.debug(records)
-    ou['data']['num'] = len(records)
-
-    #写入数据库
-    for record in records:
-        rv = cookieWriteToDB(record['nickname'], record['password'], record['cookie'])
-        if rv != True:
-            ou['error'] = 1
-            ou['msg']   = '写数据库失败'
-    return ou
-
 strapi_bp = Blueprint('strapi', __name__, template_folder='templates/html')
-
 @strapi_bp.route('/upload', methods=['POST', 'GET'])
 def upload():
     """
@@ -122,7 +29,7 @@ def upload():
     logger.debug('request.files:%s', request.files['file'])
     if request.method == 'POST':
         #保存文件
-        ou = writeFileToDB(request.files['file'])
+        ou = libcommon.writeFileToDB(request.files['file'])
         if ou['error'] == 0 :
             return redirect(url_for('stradmin.admin'))
         else:
@@ -297,9 +204,9 @@ def http_do_action(action):
         str = str.split('|')
         logger.debug(str)
         if len(str) == 3:
-            rv = cookieUpdateToDB(str[0],str[1],str[2])
+            rv = libcommon.cookieUpdateToDB(str[0],str[1],str[2])
         elif len(str) == 2:
-            rv = updateFailWriteToDB(str[0], str[1])
+            rv = libcommon.updateFailWriteToDB(str[0], str[1])
         if rv != True:
             ou['error'] = 1
             ou['msg']   = 'updaet DB failed'
@@ -316,7 +223,6 @@ def http_do_action(action):
 def http_do():
     """
     api 接口
-
     """
     if request.method != 'POST':
         return 'hello'

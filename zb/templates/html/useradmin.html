@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <title>CK Console</title>
+    <script src="echarts.min.js"></script>
+</head>
+<body>
+    <h1 align="center">CK用户控制台</h1>
+    <table id="table-4">
+        <tr>
+            <td width="600" align="left">
+                <li>共有 {{ g_stat['total'] }} 个CK</li>
+                <li>总请求数： {{ g_stat['req'] }}， 重复请求： {{ g_stat['rereq'] }} , 分配成功： {{ g_stat['asigned'] }} , 分配失败： {{ g_stat['none'] }}</li>
+                </br>
+                <li>启动时间：{{ g_stat['boot_ts'] }} </li>
+                <li>重置时间：{{ g_stat['reset_ts'] }} </li>
+            </td>
+            <td width="400" align="left">
+                <form action="/useradmin/upload?user={{ user }}" enctype='multipart/form-data' method='POST'>
+                <input type="submit" value="  上传CK  ">
+                <input type="file" name="file">
+                </form>
+           			</br>
+                <form action="/useradmin/take_cks_by_id?user={{ user }}" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="  取出CK  ">
+                    <input type="text" class="form-control" name="ck_index" placeholder="ID Index" value="0">
+                    <input type="text" class="form-control" name="ck_num" placeholder="ID Num" value="999">
+                </form>
+
+            </td>
+            <td width="100" align="left">
+                <form action="/useradmin/act_reset?user={{ user }}" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="分配重置">
+                </form>
+                </br>
+                <form action="/useradmin/act_clear?user={{ user }}" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value="清空记录">
+                </form>
+            </td>
+        </tr>
+    </table>
+    <table id="table-2">
+        <tr>
+            <td width="1220" align="left">
+                <form action="/useradmin/submit_task?user={{ user }}" enctype='multipart/form-data' method='POST'>
+                    房间链接：   <input type="text" class="form-control" name="room_url" size=60 value="https://www.douyu.com/657158">
+                </br>
+                </br>
+                    ck链接：    <input type="text" class="form-control" name="ck_url"  size=60 value="http://47.244.4.117:8200/useradmin/cookie?user={{ user }}">
+                </br></br>
+                    开始时间：   <input  id="begin_time" type="datetime-local" name="begin_time" value="2019-03-18T13:59:59" step="1"/>
+                </br></br>
+                    任务总时间(分钟)：   <input type="text" size=5 name="total_time"   value="30"/>
+                </br></br>
+                    量级：       <input type="text" class="form-control"  size=10 name="user_num"  value="10000">
+                </br></br>
+                    停留时间范围(分钟)：<input type="text" class="form-control" size=5 name="last_time_from" placeholder="ID Index" value="5">
+                                      ----
+                                      <input type="text" class="form-control" size=5 name="last_time_to" placeholder="ID Num" value="10">
+                </br></br>
+                    <input type="submit" value="  提交  ">
+                </form>
+            </td>
+        </tr>
+    </table>
+    <script language="JavaScript">
+            var t=document.getElementById("begin_time");
+            var now = new Date();
+            var year = now.getFullYear();       //年
+            var month = now.getMonth() + 1;     //月
+            var day = now.getDate();            //日
+            var hh = now.getHours();            //时
+            var mm = now.getMinutes();          //分
+            var sec = now.getSeconds();
+            var clock = year + "-";
+
+            if(month < 10)
+                clock += "0";
+
+            clock += month + "-";
+
+            if(day < 10)
+                clock += "0";
+
+            clock += day + "T";
+
+            if(hh < 10)
+                clock += "0";
+
+            clock += hh + ":";
+            if (mm < 10) clock += '0';
+            clock += mm + ":" ;
+            if (sec < 10) sec += '0';
+            clock += sec ;
+            t.value = clock;
+    </script>
+    <table id="table-1">
+        <tr><td width="1200" align="center">任务详细记录</td><td> </td></tr>
+    </table>
+    <table id="table-1">
+        <thread>
+            <tr>
+                <th width="100">ID.</th>
+                <th width="50">UserID</th>
+                <th width="50">总时间</th>
+                <th width="50">停留时间</th>
+                <th width="50">需求数量</th>
+                <th width="60">已投放数量</th>
+                <th width="140">开始时间</th>
+                <th width="200">房间</th>
+                <th width="350">CK</th>
+            </tr>
+      	</thread>
+        <tbody>
+    		{% for record in task_records %}
+        <tr>
+            <td><SMALL>{{ record['task_id'] }} </small></td>
+            <td><SMALL>{{ record['user_id'] }} </small></td>
+            <td><SMALL>{{ record['total_time'] }} </small></td>
+            <td><SMALL>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</small></td>
+            <td><SMALL>{{ record['user_num'] }} </small></td>
+            <td><SMALL>{{ record['req'] }} </small></td>
+            <td><SMALL>{{ record['begin_time'] }} </small></td>
+            <td><SMALL>{{ record['room_url'] }} </small></td>
+            <td><SMALL>{{ record['ck_url'] }} </small></td>
+
+        </tr>
+    		{% endfor %}
+    	</tbody>
+    </table>
+</body>
+</html>

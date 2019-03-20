@@ -1,9 +1,0 @@
-2019-01-18 18:30:50,780 - DY - DEBUG - {'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb'}}
-2019-01-18 18:31:51,689 - DY - DEBUG - {'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb'}}
-2019-01-18 18:32:11,247 - DY - DEBUG - {'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb'}}
-2019-01-18 18:32:43,142 - DY - INFO - select count(*) from cktb
-2019-01-18 18:32:43,157 - DY - DEBUG - query_count: (373,)
-2019-01-18 18:34:16,138 - DY - DEBUG - {'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb'}}
-2019-01-18 18:34:16,138 - DY - DEBUG - {'port': 8889, 'database': {'passwd': 'haiyao', 'table': 'cktb', 'db': 'dydb'}}
-2019-01-18 18:34:33,536 - DY - INFO - select count(*) from cktb
-2019-01-18 18:34:33,548 - DY - DEBUG - query_count: (373,)

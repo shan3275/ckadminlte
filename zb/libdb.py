@@ -91,6 +91,18 @@ class LibDB():
 
         return sql_rows
 
+    def query_by_condition(self, condition, db_table):
+        sql = "select * from %s where %s" % (db_table, condition)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            sql_rows = self.curg.fetchall()
+        except:
+            logger.exception('Insert operation error')
+            return False
+
+        return sql_rows
+
     def query_one(self, key, value, db_table):
         sql = "select * from %s where %s='%s'" %(db_table, key, value)
         logger.info("%s",sql)
@@ -174,6 +186,28 @@ class LibDB():
             logger.exception('Check_acc operation error')
             return False
         logger.info(info)
+        return info
+
+    def min_key(self, key, db_table):
+        sql = "select min(%s) from %s" %(key, db_table)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            info = self.curg.fetchone()
+        except:
+            logger.exception('Insert operation error')
+            return False
+        return info
+
+    def max_key(self, key, db_table):
+        sql = "select max(%s) from %s" %(key, db_table)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            info = self.curg.fetchone()
+        except:
+            logger.exception('Insert operation error')
+            return False
         return info
 
 logger = gl.get_logger()
