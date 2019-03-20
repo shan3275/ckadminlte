@@ -23,13 +23,6 @@ import globalvar as gl
 from strapi     import strapi_bp
 from useradmin  import useradmin_bp
 from stradmin   import stradmin_bp
-from charts     import charts_bp
-from forms      import forms_bp
-from examples   import examples_bp
-from layout     import layout_bp
-from mailbox    import mailbox_bp
-from tables     import tables_bp
-from ui         import ui_bp
 import libdb as libdb
 global logger
 global CONF
