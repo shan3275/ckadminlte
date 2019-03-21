@@ -176,6 +176,19 @@ def takeOutCksByIndexFromDB(index, num):
         return False
     return records
 
+def takeOutCksByTimeStampRange(timestampBegin, timestampEnd):
+    """
+    :param timeStampStart:
+    :param timeStampEnd:
+    :return:
+    """
+    condition = 'lastdate >= %d and lastdate <= %d and update_fail <= 5' % (timestampBegin, timestampEnd)
+    logger.info(condition)
+    records = libdb.LibDB().query_by_condition(condition, CONF['database']['table'])
+    if records == False:
+        return False
+    return records
+
 def writeRecordsToRedis(records, userId):
     # 写入数据库
     crack = libredis.LibRedis(userId)
@@ -506,6 +519,107 @@ def getTaskList():
             continue
         tasks_list.append(task_dict)
     return tasks_list
+
+
+def dateRangeToTimeStamp(date_range):
+    """
+    02/20/2019 - 03/21/2019
+    :param date_range:
+    :return:
+    """
+    date = date_range.split(' - ')
+    date_from = date[0]
+    date_to   = date[1]
+    logger.info('date_from: %s', date_from)
+    logger.info('date_to  : %s', date_to)
+    month_from = date_from.split('/')[0]
+    day_from   = date_from.split('/')[1]
+    year_from  = date_from.split('/')[2]
+    month_to   = date_to.split('/')[0]
+    day_to     = date_to.split('/')[1]
+    year_to    = date_to.split('/')[2]
+    start_str = '%s-%s-%s 00:00:00' %(year_from, month_from, day_from)
+    end_str   = '%s-%s-%s 23:59:59' %(year_to,   month_to,   day_to)
+    logger.info('start_str: %s, end_str: %s', start_str, end_str)
+
+    timestamp_start = strToTimestamp(start_str)
+    timestamp_end   = strToTimestamp(end_str)
+    logger.info('timestamp_start:%d', timestamp_start)
+    logger.info('timestamp_end  :%d', timestamp_end)
+
+    return timestamp_start,timestamp_end
+
+def dateRangeToFileName(date_range):
+    """
+    02/20/2019 - 03/21/2019
+    :param date_range:
+    :return:  字符串 0220-0321.txt
+    """
+    date = date_range.split(' - ')
+    date_from = date[0]
+    date_to   = date[1]
+    logger.info('date_from: %s', date_from)
+    logger.info('date_to  : %s', date_to)
+    month_from = date_from.split('/')[0]
+    day_from   = date_from.split('/')[1]
+
+    month_to   = date_to.split('/')[0]
+    day_to     = date_to.split('/')[1]
+
+    file_str = '%s%s-%s%s.txt' %(month_from, day_from, month_from, day_to)
+    logger.info('file name: %s', file_str)
+
+    return file_str
+
+def SaveAccountToFile(line,file):
+    """
+    功能：写行内容到文件中
+    :param line: 账号内容
+    :return: 无
+    """
+    if file == '':
+        logger.error('输出账号文件为空')
+        return
+    #str = file.split('.')
+    #fileName = str[0] + time.strftime('%Y-%m-%d') +'.'+ str[1]
+    fileName = file
+    logger.info('SaveAccountToFile: %s', fileName)
+    f = open(fileName, 'a+')
+    f.writelines(line + '\n')
+    f.close()
+    logger.debug('账号写入文件：%s',line)
+
+def getFileFromDBByDateRange(date_range):
+    """
+    根据日期范围从数据库选择用户名和密码，保存成文件
+    :param date_range:
+    :return:
+    """
+    timestampBegin, timestampEnd = dateRangeToTimeStamp(date_range)
+    #写文件
+    file = dateRangeToFileName(date_range)
+    open(file, "w+").close()
+
+    records = takeOutCksByTimeStampRange(timestampBegin, timestampEnd)
+    if records == False:
+        return file
+
+    #logger.info(records)
+    rcs = list()
+    for record in records:
+        t = dict()
+        t['nickname'] = record[2]
+        t['password'] = record[3]
+        t['regtime']  = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(record[4])))
+        t['uptime']   = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(record[5])))
+        rcs.append(t)
+        #logger.info(t)
+
+    for r in rcs:
+        r_str = '%s|%s|%s|%s' %(r['nickname'], r['password'], r['regtime'], r['uptime'])
+        SaveAccountToFile(r_str, file)
+
+    return file
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

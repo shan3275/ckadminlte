@@ -60,5 +60,5 @@ def task_th():
 if __name__ == '__main__':
     logger = gl.get_logger()
     CONF = gl.get_conf()
-    for i in range(0,6):
+    for i in range(0,1):
         task_th()

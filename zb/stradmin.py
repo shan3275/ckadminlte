@@ -101,6 +101,21 @@ def take_cks_by_id():
         logger.debug('ck_id_from: %s, ck_id_max: %s',ck_id_from,ck_id_to)
     return redirect(url_for('stradmin.admin'))
 
+@stradmin_bp.route('/download', methods=['POST'])
+def download():
+    # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
+    directory = os.getcwd()  # 假设在当前目录
+    if request.method == 'POST':
+        date_range = request.form.get('date_range')
+        if date_range == None:
+            return 'param error!!'
+        logger.info('date_range: %s', date_range)
+        file = libcommon.getFileFromDBByDateRange(date_range)
+        return send_from_directory(directory, file, as_attachment=True)
+    else:
+        return redirect(url_for('stradmin.admin'))
+
+
 @stradmin_bp.route('/', methods=['POST', 'GET'])
 def admin():
     global g_stat

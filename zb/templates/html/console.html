@@ -4,20 +4,26 @@
     <meta charset="UTF-8">
     <link href="style.css" rel="stylesheet" type="text/css" />
     <title>CK Console</title>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
     <script src="echarts.min.js"></script>
 </head>
 <body>
-    <h1 align="center">CK控制台</h1>
+    <h1 align="center">CK控制台</h1>
     <table id="table-4">
         <tr>
-            <td width="600" align="left">
+            <td width="400" align="left">
                 <li>共有 {{ g_stat['total'] }} 个CK</li>
                 <li>总请求数： {{ g_stat['req'] }}， 重复请求： {{ g_stat['rereq'] }} , 分配成功： {{ g_stat['asigned'] }} , 分配失败： {{ g_stat['none'] }}</li>
                 </br>
                 <li>启动时间：{{ g_stat['boot_ts'] }} </li>
                 <li>重置时间：{{ g_stat['reset_ts'] }} </li>
             </td>
-            <td width="600" align="left">
+            <td width="400" align="left">
                 <form action="/strapi/upload" enctype='multipart/form-data' method='POST'>
                 <input type="submit" value="  上传CK  ">
                 <input type="file" name="file">
@@ -25,6 +31,12 @@
                 </br>
                 <form action="/admin/act_clear" enctype='multipart/form-data' method='POST'>
                     <input type="submit" value="清空记录">
+                </form>
+            </td>
+            <td width="400" align="left">
+                <form action="/admin/download" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value=" 下载CK " />
+                    <input  id="reportrange" class="form-control" type="text" name="date_range" size="25" />
                 </form>
             </td>
         </tr>
@@ -63,5 +75,31 @@
     		{% endfor %}
     	</tbody>
     </table>
+
+
+    <script type="text/javascript">
+        $(function() {
+            var start = moment().subtract(29, 'days');
+            var end = moment();
+
+            function cb(start, end) {
+                $('#reportrange').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+            }
+
+            $('#reportrange').daterangepicker({
+                startDate: start,
+                endDate: end,
+                ranges: {
+                   'Today': [moment(), moment()],
+                   'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                   'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                   'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                   'This Month': [moment().startOf('month'), moment().endOf('month')],
+                   'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                }
+            }, cb);
+            cb(start, end);
+        });
+    </script>
 </body>
 </html>

@@ -34,10 +34,8 @@ def upload():
             return redirect(url_for('stradmin.admin'))
         else:
             return json.dumps(ou)
-
     else:
         return redirect(url_for('stradmin.admin'))
-
 
 def str_to_timestamp(str):
     timeArray = time.strptime(str, "%Y-%m-%d %H:%M:%S")
@@ -111,7 +109,7 @@ def http_do_action(action):
         ou['msg'] = '获取成功'
         ou['data']['acc'] = data_encryed
     elif action == 'queryOne':
-        #测试命令：curl -d "action=queryOneOutDate" -X POST http://localhost:8889/strapi/http.do
+        #测试命令：curl -d "action=queryOne" -X POST http://localhost:8889/strapi/http.do
         timestamp = int(time.time()-3600*24*6)
         conditon = 'lastdate >= %d and update_fail <= 5' %(timestamp)
         sql = libdb.LibDB().query_one_by_condition(conditon,CONF['database']['table'])
@@ -145,7 +143,7 @@ def http_do_action(action):
         logger.debug('解密后：' + str)
         str = str.split('|')
         logger.debug(str)
-        rv = cookieWriteToDB(str[0],str[1],str[2])
+        rv = libcommon.cookieWriteToDB(str[0],str[1],str[2])
         if rv != True:
             ou['error'] = 1
             ou['msg']   = '写数据库失败'
