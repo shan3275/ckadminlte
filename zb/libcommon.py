@@ -500,6 +500,7 @@ def getUserTaskList(userId):
             continue
         if (int(task_dict['user_id'])) == (int(userId)):
             tasks_list.append(task_dict)
+    tasks_list.reverse()
     return tasks_list
 
 def getTaskList():
@@ -518,8 +519,8 @@ def getTaskList():
             logger.error('异常，在redis中找不到表项')
             continue
         tasks_list.append(task_dict)
+    tasks_list.reverse()
     return tasks_list
-
 
 def dateRangeToTimeStamp(date_range):
     """
