@@ -623,7 +623,7 @@ def getFileFromDBByDateRange(date_range):
 
     for r in rcs:
         r_str = '%s|%s|%s|%s' %(r['nickname'], r['password'], r['regtime'], r['uptime'])
-        SaveAccountToFile(r_str, file)
+        SaveAccountToFile(r_str.encode("utf-8"), file)
 
     return file
 

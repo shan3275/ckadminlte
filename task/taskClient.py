@@ -52,15 +52,15 @@ def task_th():
         print 'content : ' , content
     else:
         msgid,tid =  struct.unpack('!BI', data)
-        #print 'msgid   : ' , msgid
-        #print 'tid     : ' , tid
+        print 'msgid   : ' , msgid
+        print 'tid     : ' , tid
     client.close()
     time.sleep(0)
 
 if __name__ == '__main__':
     logger = gl.get_logger()
     CONF = gl.get_conf()
-    for i in range(0,1000000):
+    for i in range(0,10):
         str = time.strftime('%Y-%m-%d %H:%M:%S')
         print '%s, num: %d'  %(str, i)
         task_th()
