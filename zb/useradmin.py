@@ -195,6 +195,8 @@ def submit_task():
         user_num      = request.form.get('user_num')
         last_time_from = request.form.get('last_time_from')
         last_time_to   = request.form.get('last_time_to')
+        time_gap       = request.form.get('time_gap')
+        gap_num        = request.form.get('gap_num')
         userIdStr = request.args.get('user')
         if userIdStr != None:
             userId = int(userIdStr)
@@ -205,7 +207,9 @@ def submit_task():
         logger.debug('begin_time: %s, total_time:%s', begin_time, total_time)
         logger.debug('user_num: %s', user_num)
         logger.debug('last_time_from:%s, last_time_to:%s', last_time_from, last_time_to)
-        ou = libcommon.writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, user_num, last_time_from, last_time_to)
+        logger.debug('time_gap:%s, gap_num:%s', time_gap, gap_num)
+        ou = libcommon.writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, \
+                                        user_num, last_time_from, last_time_to, time_gap, gap_num)
     return redirect(url_for('useradmin.admin', user=userId))
 
 @useradmin_bp.route('/', methods=['POST', 'GET'])

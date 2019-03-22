@@ -43,22 +43,25 @@
     </table>
     <table id="table-2">
         <tr>
-            <td width="1220" align="left">
+            <td width="1360" align="left">
                 <form action="/useradmin/submit_task?user={{ user }}" enctype='multipart/form-data' method='POST'>
-                    房间链接：   <input type="text" class="form-control" name="room_url" size=60 value="https://www.douyu.com/657158">
-                </br>
-                </br>
-                    ck链接：    <input type="text" class="form-control" name="ck_url"  size=60 value="http://47.244.4.117:8200/useradmin/cookie?user={{ user }}">
+                房间链接：<input type="text" class="form-control" name="room_url" size=60 value="https://www.douyu.com/657158">
                 </br></br>
-                    开始时间：   <input  id="begin_time" type="datetime-local" name="begin_time" value="2019-03-18T13:59:59" step="1"/>
+                ck链接：<input type="text" class="form-control" name="ck_url"  size=60 value="http://47.244.4.117:8200/useradmin/cookie?user={{ user }}">
                 </br></br>
-                    任务总时间(分钟)：   <input type="text" size=5 name="total_time"   value="30"/>
+                    开始时间： <input  id="begin_time" type="datetime-local" name="begin_time" value="2019-03-18T13:59:59" step="1"/>
                 </br></br>
-                    量级：       <input type="text" class="form-control"  size=10 name="user_num"  value="10000">
+                    任务总时间(分钟)：<input type="text" size=5 name="total_time"   value="30"/>
+                </br></br>
+                    量级：<input type="text" class="form-control"  size=10 name="user_num"  value="10000">
                 </br></br>
                     停留时间范围(分钟)：<input type="text" class="form-control" size=5 name="last_time_from" placeholder="ID Index" value="5">
                                       ----
                                       <input type="text" class="form-control" size=5 name="last_time_to" placeholder="ID Num" value="10">
+                </br></br>
+                    投放时间间隔(秒)： <input type="text" size=5 name="time_gap"   value="6"/>
+                </br></br>
+                    投放间隔次数：   <input type="text" size=5 name="gap_num"   value="100"/>
                 </br></br>
                     <input type="submit" value="  提交  ">
                 </form>
@@ -97,7 +100,7 @@
             t.value = clock;
     </script>
     <table id="table-1">
-        <tr><td width="1200" align="center">任务详细记录</td><td> </td></tr>
+        <tr><td width="1340" align="center">任务详细记录</td><td> </td></tr>
     </table>
     <table id="table-1">
         <thread>
@@ -107,7 +110,9 @@
                 <th width="50">总时间</th>
                 <th width="50">停留时间</th>
                 <th width="50">需求数量</th>
-                <th width="60">已投放数量</th>
+                <th width="50">已投数量</th>
+                <th width="50">投放间隔</th>
+                <th width="50">间隔次数</th>
                 <th width="140">开始时间</th>
                 <th width="200">房间</th>
                 <th width="350">CK</th>
@@ -122,6 +127,8 @@
             <td><SMALL>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</small></td>
             <td><SMALL>{{ record['user_num'] }} </small></td>
             <td><SMALL>{{ record['req'] }} </small></td>
+            <td><SMALL>{{ record['time_gap'] }} </small></td>
+            <td><SMALL>{{ record['gap_num'] }} </small></td>
             <td><SMALL>{{ record['begin_time'] }} </small></td>
             <td><SMALL>{{ record['room_url'] }} </small></td>
             <td><SMALL>{{ record['ck_url'] }} </small></td>

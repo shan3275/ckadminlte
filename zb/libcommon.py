@@ -423,7 +423,8 @@ def strToTimestamp(str):
     timestamp = int(time.mktime(timeArray))
     return timestamp
 
-def writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, user_num, last_time_from, last_time_to):
+def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
+                     user_num, last_time_from, last_time_to, time_gap, gap_num):
     """
     将用户的任务写入Redis
     :param userId:
@@ -438,6 +439,7 @@ def writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, user_num, 
     """
     #处理参数
     task =dict()
+    task['submit_time'] = now()
     task['room_url'] = room_url
     task['ck_url']   = ck_url
     task['begin_time'] = begin_time.replace('T', ' ')
@@ -446,12 +448,15 @@ def writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, user_num, 
     task['req']        = 0
     task['last_time_from'] = last_time_from
     task['last_time_to']   = last_time_to
+    task['time_gap']       = time_gap
+    task['gap_num']        = gap_num
     task['user_id']        = userId
     content= '<t a="%d|20" flash="1" isBoot="1" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
              %( (int(total_time)) * 60, ck_url, room_url,(int(last_time_from)) * 60, (int(last_time_to)) * 60)
     task['content'] = content
 
     task_timestamp = strToTimestamp(task['begin_time'])
+    task['begin_timestamp'] = task_timestamp
 
     #获取任务数量
     #将任务存储在DB15中统一管理

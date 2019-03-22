@@ -69,7 +69,7 @@ def decode_data(data):
 
 def task_th(recvData):
     ou = dict(error=0, msg='ok', data=dict())
-    logger.info('recvData len:%d', len(recvData))
+    #logger.info('recvData len:%d', len(recvData))
     if len(recvData) != 29:
         ou['error'] = 1
         ou['msg']   = 'rcv data error!'

@@ -209,7 +209,7 @@ class LibRedis():
         :return: 数字
         """
         num = self.redis.zcard(name)
-        logger.info("zCard return(%d)", num)
+        #logger.info("zCard return(%d)", num)
         return num
 
     def zCount(self,name,min,max):
@@ -221,7 +221,7 @@ class LibRedis():
         :return: 数字
         """
         num = self.redis.zcount(name, min,max)
-        logger.info("zCount return(%d)", num)
+        #logger.info("zCount return(%d)", num)
         return num
 
     def zRangeByScore(self,name,min, max):
@@ -233,7 +233,7 @@ class LibRedis():
         :return: list [],
         """
         list = self.redis.zrangebyscore(name, min, max)
-        logger.info(list)
+        #logger.info(list)
         return list
 
     def zRange(self,name,min,max):

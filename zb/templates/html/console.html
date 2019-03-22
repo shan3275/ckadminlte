@@ -11,9 +11,15 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
     <script src="echarts.min.js"></script>
+    <script src="vintage.js"></script>
 </head>
 <body>
     <h1 align="center">CK控制台</h1>
+        <script>
+        var chart = echarts.init(document.getElementById('main'), 'vintage');
+        chart.setOption({
+        });
+    </script>
     <table id="table-4">
         <tr>
             <td width="400" align="left">
@@ -28,10 +34,6 @@
                 <input type="submit" value="  上传CK  ">
                 <input type="file" name="file">
                 </form>
-                </br>
-                <form action="/admin/act_clear" enctype='multipart/form-data' method='POST'>
-                    <input type="submit" value="清空记录">
-                </form>
             </td>
             <td width="400" align="left">
                 <form action="/admin/download" enctype='multipart/form-data' method='POST'>
@@ -41,8 +43,8 @@
             </td>
         </tr>
     </table>
-    <table id="table-1">
-        <tr><td width="1200" align="center">任务详细记录</td><td> </td></tr>
+<table id="table-1">
+        <tr><td width="1340" align="center">任务详细记录</td><td> </td></tr>
     </table>
     <table id="table-1">
         <thread>
@@ -52,7 +54,9 @@
                 <th width="50">总时间</th>
                 <th width="50">停留时间</th>
                 <th width="50">需求数量</th>
-                <th width="60">已投放数量</th>
+                <th width="50">已投数量</th>
+                <th width="50">投放间隔</th>
+                <th width="50">间隔次数</th>
                 <th width="140">开始时间</th>
                 <th width="200">房间</th>
                 <th width="350">CK</th>
@@ -67,6 +71,8 @@
             <td><SMALL>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</small></td>
             <td><SMALL>{{ record['user_num'] }} </small></td>
             <td><SMALL>{{ record['req'] }} </small></td>
+            <td><SMALL>{{ record['time_gap'] }} </small></td>
+            <td><SMALL>{{ record['gap_num'] }} </small></td>
             <td><SMALL>{{ record['begin_time'] }} </small></td>
             <td><SMALL>{{ record['room_url'] }} </small></td>
             <td><SMALL>{{ record['ck_url'] }} </small></td>

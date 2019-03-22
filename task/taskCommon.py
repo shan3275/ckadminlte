@@ -132,14 +132,24 @@ def getOneTask():
             ou['error'] = 1
             ou['msg'] = 'no task'
             return ou
-        logger.info(task_dict)
+        #logger.info(task_dict)
         req = int(task_dict['req'])
         user_num = int(task_dict['user_num'])
         if req >= user_num:
             task_dict = None
             continue
         else:
-            break
+            time_gap = int(task_dict['time_gap'])
+            gap_num  = int(task_dict['gap_num'])
+            begin_timestamp = int(task_dict['begin_timestamp'])
+            index = (timestamp - begin_timestamp) / time_gap
+            gap_num_max = user_num / gap_num * (index+1)
+            logger.debug('time_gap:%d,gap_num:%d,index:%d,gap_num_max:%d,req:%d', time_gap,gap_num,index,gap_num_max,req)
+            if req >= gap_num_max:
+                task_dict = None
+                continue
+            else:
+                break
 
     if task_dict != None :
         logger.info('当前task 满足时间条件，可以提交')

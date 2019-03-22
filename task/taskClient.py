@@ -28,37 +28,39 @@ def task_th():
     client = socket.socket()
     client.connect((HOST, PORT))
     data = struct.pack("!BI24s", 6, 5, UID)
-    for i in data:
-        sys.stdout.write('%#x' % ord(i))
-    print ''
+    #for i in data:
+    #    sys.stdout.write('%#x' % ord(i))
+    #print ''
     data  = encode_data(data)
-    for i in data:
-        sys.stdout.write('%#x' % ord(i))
-    print ''
+    #for i in data:
+    #    sys.stdout.write('%#x' % ord(i))
+    #print ''
     client.send(data)
     recvData = client.recv(BUFSIZ)
     data = encode_data(recvData)
-    for i in data:
-        sys.stdout.write('%#x' % ord(i))
-    print ''
-    print 'data len:%d' %(len(data))
+    #for i in data:
+    #    sys.stdout.write('%#x' % ord(i))
+    #print ''
+    #print 'data len:%d' %(len(data))
     if len(data) > 10:
         fmt = '!BIBH%dsI' %(len(data)-12)
         msgid, tid, parallel,length,content,mid = struct.unpack(fmt, data)
-        print 'msgid   : ' , msgid
-        print 'tid     : ' , tid
-        print 'parallel: ' , parallel
-        print 'length  : ' , length
+        #print 'msgid   : ' , msgid
+        #print 'tid     : ' , tid
+        #print 'parallel: ' , parallel
+        #print 'length  : ' , length
         print 'content : ' , content
     else:
         msgid,tid =  struct.unpack('!BI', data)
-        print 'msgid   : ' , msgid
-        print 'tid     : ' , tid
+        #print 'msgid   : ' , msgid
+        #print 'tid     : ' , tid
     client.close()
     time.sleep(0)
 
 if __name__ == '__main__':
     logger = gl.get_logger()
     CONF = gl.get_conf()
-    for i in range(0,1):
+    for i in range(0,1000000):
+        str = time.strftime('%Y-%m-%d %H:%M:%S')
+        print '%s, num: %d'  %(str, i)
         task_th()

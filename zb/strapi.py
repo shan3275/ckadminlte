@@ -138,9 +138,9 @@ def http_do_action(action):
             ou['error'] = 3
             ou['msg']   = '参数错误'
             return ou
-        logger.debug('获取加密前：' + entry)
+        logger.debug('before decrypt: ' + entry)
         str = base64.b64decode(entry)
-        logger.debug('解密后：' + str)
+        logger.debug('after decrypt: ' + str)
         str = str.split('|')
         logger.debug(str)
         rv = libcommon.cookieWriteToDB(str[0],str[1],str[2])
