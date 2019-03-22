@@ -116,6 +116,24 @@ def download():
         return redirect(url_for('stradmin.admin'))
 
 
+@stradmin_bp.route('/upload', methods=['POST', 'GET'])
+def upload():
+    """
+    测试命令：curl -F "file=@/Users/liudeshan/work/studycase/script/flask/zb/2.csv" -X  "POST" http://localhost:8888/admin/upload
+    :return:
+    """
+    logger.debug('request.method:%s', request.method)
+    logger.debug('request.files:%s', request.files['file'])
+    if request.method == 'POST':
+        #保存文件
+        ou = libcommon.writeFileToDB(request.files['file'])
+        if ou['error'] == 0 :
+            return redirect(url_for('stradmin.admin'))
+        else:
+            return json.dumps(ou)
+    else:
+        return redirect(url_for('stradmin.admin'))
+
 @stradmin_bp.route('/', methods=['POST', 'GET'])
 def admin():
     global g_stat

@@ -19,23 +19,6 @@ global logger
 global CONF
 
 strapi_bp = Blueprint('strapi', __name__, template_folder='templates/html')
-@strapi_bp.route('/upload', methods=['POST', 'GET'])
-def upload():
-    """
-    测试命令：curl -F "file=@/Users/liudeshan/work/studycase/script/flask/zb/2.csv" -X  "POST" http://localhost:8888/strapi/upload
-    :return:
-    """
-    logger.debug('request.method:%s', request.method)
-    logger.debug('request.files:%s', request.files['file'])
-    if request.method == 'POST':
-        #保存文件
-        ou = libcommon.writeFileToDB(request.files['file'])
-        if ou['error'] == 0 :
-            return redirect(url_for('stradmin.admin'))
-        else:
-            return json.dumps(ou)
-    else:
-        return redirect(url_for('stradmin.admin'))
 
 def str_to_timestamp(str):
     timeArray = time.strptime(str, "%Y-%m-%d %H:%M:%S")

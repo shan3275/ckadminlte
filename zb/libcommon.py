@@ -106,10 +106,23 @@ def writeFileToDB(file):
 
     #写入数据库
     for record in records:
-        rv = cookieWriteToDB(record['nickname'], record['password'], record['cookie'])
-        if rv != True:
+        sql = libdb.LibDB().query_one('nickname', record['nickname'], CONF['database']['table'])
+        if sql == False:
             ou['error'] = 1
-            ou['msg']   = '写数据库失败'
+            ou['msg']   = '读数据库失败'
+            continue
+        if sql == None:
+            rv = cookieWriteToDB(record['nickname'], record['password'], record['cookie'])
+            if rv != True:
+                ou['error'] = 1
+                ou['msg']   = '写数据库失败'
+                continue
+        else:
+            rv = cookieUpdateToDB(record['nickname'], record['password'], record['cookie'])
+            if rv != True:
+                ou['error'] = 1
+                ou['msg']   = '更新数据库失败'
+                continue
     return ou
 
 def cookie_append(records):
