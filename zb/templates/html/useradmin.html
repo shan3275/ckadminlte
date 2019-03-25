@@ -43,7 +43,8 @@
     </table>
     <table id="table-2">
         <tr>
-            <td width="1360" align="left">
+            <td width="400" align="left">
+                <p color="red">创建提交任务：</p>
                 <form action="/useradmin/submit_task?user={{ user }}" enctype='multipart/form-data' method='POST'>
                 房间链接：<input type="text" class="form-control" name="room_url" size=60 value="https://www.douyu.com/657158">
                 </br></br>
@@ -63,6 +64,14 @@
                 </br></br>
                     投放间隔次数：   <input type="text" size=5 name="gap_num"   value="100"/>
                 </br></br>
+                    <input type="submit" value="  提交  ">
+                </form>
+            </td>
+            <td width="400" align="left">
+                <p>撤销任务：</p>
+                <form action="/useradmin/del_task?user={{ user }}" enctype='multipart/form-data' method='POST'>
+                    任务ID： <input type="text" class="form-control"  size=20 name="task_id"  value="user100001">
+                    </br></br>
                     <input type="submit" value="  提交  ">
                 </form>
             </td>
@@ -100,12 +109,13 @@
             t.value = clock;
     </script>
     <table id="table-1">
-        <tr><td width="1340" align="center">任务详细记录</td><td> </td></tr>
+        <tr><td width="1450" align="center">任务详细记录</td><td> </td></tr>
     </table>
     <table id="table-1">
         <thread>
             <tr>
                 <th width="100">ID.</th>
+                <th width="100">状态</th>
                 <th width="50">UserID</th>
                 <th width="50">总时间</th>
                 <th width="50">停留时间</th>
@@ -122,6 +132,7 @@
     		{% for record in task_records %}
         <tr>
             <td><SMALL>{{ record['task_id'] }} </small></td>
+            <td><SMALL>{{ record['status'] }} </small></td>
             <td><SMALL>{{ record['user_id'] }} </small></td>
             <td><SMALL>{{ record['total_time'] }} </small></td>
             <td><SMALL>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</small></td>

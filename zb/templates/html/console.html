@@ -44,12 +44,13 @@
         </tr>
     </table>
 <table id="table-1">
-        <tr><td width="1340" align="center">任务详细记录</td><td> </td></tr>
+        <tr><td width="1450" align="center">任务详细记录</td><td> </td></tr>
     </table>
     <table id="table-1">
         <thread>
             <tr>
                 <th width="100">ID.</th>
+                <th width="100">状态</th>
                 <th width="50">UserID</th>
                 <th width="50">总时间</th>
                 <th width="50">停留时间</th>
@@ -66,6 +67,7 @@
     		{% for record in task_records %}
         <tr>
             <td><SMALL>{{ record['task_id'] }} </small></td>
+            <td><SMALL>{{ record['status'] }} </small></td>
             <td><SMALL>{{ record['user_id'] }} </small></td>
             <td><SMALL>{{ record['total_time'] }} </small></td>
             <td><SMALL>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</small></td>

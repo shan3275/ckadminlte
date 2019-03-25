@@ -464,6 +464,7 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
     task['time_gap']       = time_gap
     task['gap_num']        = gap_num
     task['user_id']        = userId
+    task['effective']      = 1
     content= '<t a="%d|20" flash="1" isBoot="1" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
              %( (int(total_time)) * 60, ck_url, room_url,(int(last_time_from)) * 60, (int(last_time_to)) * 60)
     task['content'] = content
@@ -501,6 +502,26 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
         return False
     return True
 
+def delTaskFromRedis(userId,task_id):
+    """
+    根据任务ID删除任务（更新删除标志位）
+    :param userId:
+    :param task_id:
+    :return:
+    """
+    crack = libredis.LibRedis(15)
+    rv = crack.hashExists(task_id,'effective')
+    if rv == False:
+        logger.info('Task:%s, not exist!!', task_id)
+        return False
+    logger.info('Task:%s, exist!')
+    rv = crack.hashSet(task_id,'effective', 0)
+    if rv == False:
+        logger.info('Task:%s, del fail!!', task_id)
+        return False
+    logger.info('Task:%s, del success!')
+    return True
+
 def getUserTaskList(userId):
     tasks_list = list()
 
@@ -517,6 +538,10 @@ def getUserTaskList(userId):
             logger.error('异常，在redis中找不到表项')
             continue
         if (int(task_dict['user_id'])) == (int(userId)):
+            if (int(task_dict['effective'])) == 1:
+                task_dict['status'] = 'Validated'
+            else:
+                task_dict['status'] = 'Cancelled'
             tasks_list.append(task_dict)
     tasks_list.reverse()
     return tasks_list
@@ -536,6 +561,10 @@ def getTaskList():
         if task_dict == None:
             logger.error('异常，在redis中找不到表项')
             continue
+        if (int(task_dict['effective'])) == 1:
+            task_dict['status'] = 'Validated'
+        else:
+            task_dict['status'] = 'Cancelled'
         tasks_list.append(task_dict)
     tasks_list.reverse()
     return tasks_list
@@ -585,7 +614,7 @@ def dateRangeToFileName(date_range):
     month_to   = date_to.split('/')[0]
     day_to     = date_to.split('/')[1]
 
-    file_str = '%s%s-%s%s.txt' %(month_from, day_from, month_from, day_to)
+    file_str = '%s%s-%s%s.txt' %(month_from, day_from, month_to, day_to)
     logger.info('file name: %s', file_str)
 
     return file_str

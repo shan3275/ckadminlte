@@ -133,6 +133,10 @@ def getOneTask():
             ou['msg'] = 'no task'
             return ou
         #logger.info(task_dict)
+        effective = int(task_dict['effective'])
+        if effective == 0:
+            task_dict = None
+            continue
         req = int(task_dict['req'])
         user_num = int(task_dict['user_num'])
         if req >= user_num:

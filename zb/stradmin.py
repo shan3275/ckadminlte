@@ -119,7 +119,7 @@ def download():
 @stradmin_bp.route('/upload', methods=['POST', 'GET'])
 def upload():
     """
-    测试命令：curl -F "file=@/Users/liudeshan/work/studycase/script/flask/zb/2.csv" -X  "POST" http://localhost:8888/admin/upload
+    测试命令：curl -F "file=@/Users/liudeshan/work/studycase/script/flask/zb/2.csv" -X  "POST" http://localhost:8888//upload
     :return:
     """
     logger.debug('request.method:%s', request.method)

@@ -208,8 +208,23 @@ def submit_task():
         logger.debug('user_num: %s', user_num)
         logger.debug('last_time_from:%s, last_time_to:%s', last_time_from, last_time_to)
         logger.debug('time_gap:%s, gap_num:%s', time_gap, gap_num)
-        ou = libcommon.writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, \
+        libcommon.writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, \
                                         user_num, last_time_from, last_time_to, time_gap, gap_num)
+    return redirect(url_for('useradmin.admin', user=userId))
+
+@useradmin_bp.route('/del_task', methods=['POST', 'GET'])
+def del_task():
+    global g_stat
+    if request.method == 'POST':
+        task_id    = request.form.get('task_id')
+        userIdStr = request.args.get('user')
+        if userIdStr != None:
+            userId = int(userIdStr)
+        else:
+            # default 0
+            userId = 0
+        logger.debug('Task_id: %s',task_id)
+        libcommon.delTaskFromRedis(userId,task_id)
     return redirect(url_for('useradmin.admin', user=userId))
 
 @useradmin_bp.route('/', methods=['POST', 'GET'])

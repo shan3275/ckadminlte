@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+</head>
+<body>
+
+<table id="example1111" class="display" style="width:100%">
+        <thread>
+            <tr>
+                <th>ID.</th>
+                <th>UserID</th>
+                <th>总时间</th>
+                <th>停留时间</th>
+                <th>需求数量</th>
+                <th>已投数量</th>
+                <th>投放间隔</th>
+                <th>间隔次数</th>
+                <th>开始时间</th>
+                <th>房间</th>
+                <th>CK</th>
+            </tr>
+      	</thread>
+        <tbody>
+            {%for record in task_records%}
+            <tr>
+                <td>{{ record['task_id'] }}</td>
+                <td>{{ record['user_id'] }} </td>
+                <td>{{ record['total_time'] }}</td>
+                <td>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</td>
+                <td>{{ record['user_num'] }}</td>
+                <td>{{ record['req'] }}</td>
+                <td>{{ record['time_gap'] }}</td>
+                <td>{{ record['gap_num'] }}</td>
+                <td>{{ record['begin_time'] }}</td>
+                <td>{{ record['room_url'] }}</td>
+                <td>{{ record['ck_url'] }}</td>
+            </tr>
+            {%endfor%}
+            <tfoot>
+                <tr>
+                    <th>ID.</th>
+                    <th>UserID</th>
+                    <th>总时间</th>
+                    <th>停留时间</th>
+                    <th>需求数量</th>
+                    <th>已投数量</th>
+                    <th>投放间隔</th>
+                    <th>间隔次数</th>
+                    <th>开始时间</th>
+                    <th>房间</th>
+                    <th>CK</th>
+                </tr>
+            </tfoot>
+    	</tbody>
+    </table>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+        $('#example111').DataTable();
+    } );
+    </script>
+
+</body>
+</html>

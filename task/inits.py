@@ -12,7 +12,7 @@ def log_init(log_app_name, file_name):
     ch = logging.handlers.TimedRotatingFileHandler(
                     filename=file_name,
                     when='midnight',
-                    backupCount=3
+                    backupCount=1
                     )
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
