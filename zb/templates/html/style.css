@@ -1,5 +1,21 @@
-﻿table{table-layout: fixed;word-break: break-all; word-wrap: break-word; //表格固定布局}
-.award-name{-o-text-overflow:ellipsis;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;width:100%; //超出部分显示省略号}
+﻿body
+{
+	background-image:url('bird.png');
+	background-repeat:no-repeat;
+	background-position:right top;
+	margin-right:200px;
+}
+table{
+table-layout: fixed;
+word-break: break-all;
+word-wrap: break-word; //表格固定布局
+}
+.award-name{
+-o-text-overflow:ellipsis;
+text-overflow:ellipsis;
+overflow:hidden;
+white-space:nowrap;
+width:100%; //超出部分显示省略号}
 /* ----------------------------------------------------------------------------------- */
 /* Border styles */
 #table-1 thead, #table-1 tr {

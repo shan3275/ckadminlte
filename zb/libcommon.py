@@ -664,7 +664,7 @@ def getFileFromDBByDateRange(date_range):
         #logger.info(t)
 
     for r in rcs:
-        r_str = '%s|%s|%s|%s' %(r['nickname'], r['password'], r['regtime'], r['uptime'])
+        r_str = '%s----%s' %(r['nickname'], r['password'])
         SaveAccountToFile(r_str.encode("utf-8"), file)
 
     return file
