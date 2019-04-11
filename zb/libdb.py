@@ -91,6 +91,17 @@ class LibDB():
 
         return sql_rows
 
+    def query_all_by_condition(self, sql):
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            sql_rows = self.curg.fetchall()
+        except:
+            logger.exception('Insert operation error')
+            return False
+
+        return sql_rows
+
     def query_by_condition(self, condition, db_table):
         sql = "select * from %s where %s" % (db_table, condition)
         logger.info("%s",sql)
@@ -115,7 +126,7 @@ class LibDB():
         return info
 
     def query_one_by_condition(self, condition, db_table):
-        sql = "select * from %s where %s" %(db_table, condition)
+        sql = "select * from %s where %s order by rand()" %(db_table, condition)
         logger.info("%s",sql)
         try:
             self.curg.execute(sql)

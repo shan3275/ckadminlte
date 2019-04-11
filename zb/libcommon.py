@@ -44,6 +44,19 @@ def cookieUpdateToDB(nickname, pwd, cookie):
     rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
     return rv
 
+def updateColdDateToDB(nickname,timestamp):
+    """
+    设置冷却时间
+    :param nickname: 用户名
+    :param timestamp: 时间戳，10位
+    :return:
+    """
+    setval = "colddate=%d" %(timestamp)
+    condition = "nickname='%s'" %(nickname)
+    logger.debug('setval:%s, condition:%s', setval, condition)
+    rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
+    return rv
+
 def cookie_csv_parse_for_db(line):
     row = line.split(',')
     if len(row) < 3:
@@ -668,6 +681,38 @@ def getFileFromDBByDateRange(date_range):
         SaveAccountToFile(r_str.encode("utf-8"), file)
 
     return file
+
+def getFileFromDBByIndex(index_begin, index_to):
+    """
+    根据日期范围从数据库选择用户名和密码，保存成文件
+    :param date_range:
+    :return:
+    """
+    #写文件
+    file = '%d-%d.txt' %(index_begin, index_to)
+    open(file, "w+").close()
+
+    records = takeOutCksByIndexFromDB(index_begin,index_to-index_begin+1)
+    if records == False:
+        return file
+
+    #logger.info(records)
+    rcs = list()
+    for record in records:
+        t = dict()
+        t['nickname'] = record[2]
+        t['password'] = record[3]
+        t['regtime']  = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(record[4])))
+        t['uptime']   = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(record[5])))
+        rcs.append(t)
+        #logger.info(t)
+
+    for r in rcs:
+        r_str = '%s----%s' %(r['nickname'], r['password'])
+        SaveAccountToFile(r_str.encode("utf-8"), file)
+
+    return file
+
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

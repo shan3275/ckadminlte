@@ -10,20 +10,13 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
-    <script src="echarts.min.js"></script>
-    <script src="vintage.js"></script>
 </head>
 <body>
     <h1 align="center">CK控制台</h1>
-        <script>
-        var chart = echarts.init(document.getElementById('main'), 'vintage');
-        chart.setOption({
-        });
-    </script>
     <table id="table-4">
         <tr>
             <td width="400" align="left">
-                <li>共有 {{ g_stat['total'] }} 个CK</li>
+                <li>共有 {{ g_stat['total'] }} 个CK  可使用 {{ g_stat['could_use'] }} 个CK</li>
                 </br>
                 <li>启动时间：{{ g_stat['boot_ts'] }} </li>
                 <li>重置时间：{{ g_stat['reset_ts'] }} </li>
@@ -39,10 +32,16 @@
                     <input type="submit" value=" 下载CK " />
                     <input  id="reportrange" class="form-control" type="text" name="date_range" size="25" />
                 </form>
+                </br>
+                <form action="/admin/download" enctype='multipart/form-data' method='POST'>
+                    <input type="submit" value=" 下载CK ">
+                    <input type="text" class="form-control" name="ck_from" placeholder="ID Index Begin" value="0" size="11">
+                    <input type="text" class="form-control" name="ck_to"   placeholder="ID Index End" value="999"   size="11">
+                </form>
             </td>
         </tr>
     </table>
-<table id="table-1">
+<table id="table-2">
         <tr><td width="1450" align="center">任务详细记录</td><td> </td></tr>
     </table>
     <table id="table-1">
