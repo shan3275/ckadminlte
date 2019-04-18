@@ -20,6 +20,17 @@ def encode_data(data):
     bytes = struct.pack(fmt, *bytes)
     return bytes
 
+def getCKUrl(content):
+    """
+    解析出ckurl链接
+    :param content:
+    :return:
+    """
+    str = content.split(' ')[4]
+    url= str.split('=', 1)[1]
+    print(url)
+    return url
+
 def task_th():
     HOST = CONF['host']
     PORT = CONF['port']
@@ -50,6 +61,7 @@ def task_th():
         #print 'parallel: ' , parallel
         #print 'length  : ' , length
         print 'content : ' , content
+        getCKUrl(content)
     else:
         msgid,tid =  struct.unpack('!BI', data)
         print 'msgid   : ' , msgid
@@ -60,7 +72,7 @@ def task_th():
 if __name__ == '__main__':
     logger = gl.get_logger()
     CONF = gl.get_conf()
-    for i in range(0,10):
+    for i in range(0,1):
         str = time.strftime('%Y-%m-%d %H:%M:%S')
         print '%s, num: %d'  %(str, i)
         task_th()

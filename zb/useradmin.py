@@ -242,19 +242,32 @@ def admin():
 
 @useradmin_bp.route('/cookie',methods=['GET'])
 def cookie():
+    ##调试模式传递IP
     debug =  request.args.get('debug')
     if debug != None:
         ip = request.args.get('ip')
         if ip == None:
             ip = '127.0.0.1'
     else:
-        ip = request.remote_addr
+        ##nginx 反向代理，获取真实IP
+        if request.headers.has_key('X-Forwarded-For') == True:
+            real_ip = request.headers['X-Forwarded-For']
+            if real_ip != None:
+                if len(real_ip.split(',')) > 1:
+                    ip = real_ip.split(",")[1]
+                else:
+                    ip = real_ip
+        else:
+            ##未使用nginx反向代理，获取真实IP
+            ip = request.remote_addr
+
     userIdStr = request.args.get('user')
     if userIdStr != None:
         userId = int(userIdStr)
     else:
         #default 0
         userId = 0
+    taskID = request.args.get('id')
     crack = libredis.LibRedis(userId)
     crack.hashincr('g_stat','req')
     record = libcommon.get_record_from_redis(ip,userId)
@@ -271,6 +284,9 @@ def cookie():
         crack.hashincr('g_stat','asigned')
 
     rep = {'ip':ip, 'cookie': cookie}
+
+    libcommon.updateTaskCKReq(taskID)
+
     #logger.debug(rep)
     return jsonify(rep)
 

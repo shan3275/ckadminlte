@@ -7,9 +7,12 @@ import platform,os
 import sys,time
 import random
 import requests
-import logging
-from logging import handlers
+
+import inits
+import globalvar as gl
+
 global logger
+global CONF
 
 def log_init(log_app_name, file_name):
     logger = logging.getLogger(log_app_name)
@@ -59,8 +62,8 @@ def autoGetCK(num):
     while index < num:
         index = index + 1
         ip = rip()
-        url = "http://192.168.100.133:8889/admin/cookie"
-        payload = dict(ip=rip(),debug='1',user=1)
+        url = "http://47.244.4.117:8200/useradmin/cookie"
+        payload = dict(ip=rip(),debug='1',user=0)
         r = requests.get(url, params=payload)
         logger.debug('链接: ' + str(r.url))
         ##判断http post返回值

@@ -335,7 +335,7 @@ def fetch_record_from_redis(ip, userId):
     crack = libredis.LibRedis(userId)
     num = crack.setCard(CONF['redis']['live'])
     if num == 0:
-        logger.info('cookie has used over, fecth record fail')
+        logger.info('cookie has used over, fecth record fail,userid:%d',userId)
         return None
 
     nickname = crack.setSpop(CONF['redis']['live'])
@@ -467,20 +467,21 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
     task =dict()
     task['submit_time'] = now()
     task['room_url'] = room_url
-    task['ck_url']   = ck_url
+    #task['ck_url']   = ck_url
     task['begin_time'] = begin_time.replace('T', ' ')
     task['total_time'] = total_time
     task['user_num']   = user_num
     task['req']        = 0
+    task['ck_req']     = 0
     task['last_time_from'] = last_time_from
     task['last_time_to']   = last_time_to
     task['time_gap']       = time_gap
     task['gap_num']        = gap_num
     task['user_id']        = userId
     task['effective']      = 1
-    content= '<t a="%d|20" flash="1" isBoot="1" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
-             %( (int(total_time)) * 60, ck_url, room_url,(int(last_time_from)) * 60, (int(last_time_to)) * 60)
-    task['content'] = content
+    #content= '<t a="%d|20" flash="1" isBoot="1" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
+    #         %( (int(total_time)) * 60, ck_url, room_url,(int(last_time_from)) * 60, (int(last_time_to)) * 60)
+    #task['content'] = content
 
     task_timestamp = strToTimestamp(task['begin_time'])
     task['begin_timestamp'] = task_timestamp
@@ -491,12 +492,16 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
     Digit = crack.zCard(CONF['redis']['begintask'])
     taskID = 'user%02d%04d' %(userId, Digit)
     task['task_id'] = taskID
+    task['ck_url'] = ck_url+'&id='+taskID
+    content= '<t a="%d|20" flash="1" isBoot="1" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
+             %( (int(total_time)) * 60, task['ck_url'], room_url,(int(last_time_from)) * 60, (int(last_time_to)) * 60)
+    task['content'] = content
     logger.info(task)
 
     # task写入redis
     rv = crack.hashMSet(taskID, task)
     if rv != True:
-        logger.info('write to redis fail %s', record)
+        logger.info('write to redis fail %s', taskID)
         return False
     # task名称以开始时间作为score集合，写入redis
     a=dict()
@@ -581,6 +586,15 @@ def getTaskList():
         tasks_list.append(task_dict)
     tasks_list.reverse()
     return tasks_list
+
+
+def updateTaskCKReq(taskID):
+    if taskID != None:
+        crack = libredis.LibRedis(15)
+        crack.hashincr(taskID,'ck_req')
+    else:
+        logger.error('taskID is null, can not update task ck_req number!!!')
+
 
 def dateRangeToTimeStamp(date_range):
     """

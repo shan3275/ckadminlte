@@ -51,7 +51,7 @@ class LibRedis():
         :return: True or False
         """
         rv = self.redis.hmset(name,map)
-        logger.info("write dict to redis, rv(%s)", rv)
+        #logger.info("write dict to redis, rv(%s)", rv)
         if rv == 1:
             return True
         else:
@@ -79,7 +79,7 @@ class LibRedis():
         :return: None or 键值
         """
         rv = self.redis.hget(name,key)
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def hashGetAll(self,name):
@@ -99,7 +99,7 @@ class LibRedis():
         :return: true or False
         """
         rv = self.redis.hexists(name,key)
-        logger.info(rv)
+        #logger.info(rv)
         if rv == 1:
             return True
         else:
@@ -144,7 +144,7 @@ class LibRedis():
         :return: True or False
         """
         rv = self.redis.sadd(name,value)
-        logger.info(rv)
+        #logger.info(rv)
         if rv > 0:
             return True
         else:
@@ -157,7 +157,7 @@ class LibRedis():
         :return: 数字
         """
         num = self.redis.scard(name)
-        logger.info("setCard return(%d)", num)
+        #logger.info("setCard return(%d)", num)
         return num
 
     def setSmembers(self,name):
@@ -167,7 +167,7 @@ class LibRedis():
         :return: None or string
         """
         rv = self.redis.smembers(name)
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def setSpop(self,name):
@@ -177,7 +177,7 @@ class LibRedis():
         :return:
         """
         rv = self.redis.spop(name)
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def setSunionstore(self,dst,source):
@@ -188,7 +188,7 @@ class LibRedis():
         :return: the number of keys in the new set.
         """
         rv = self.redis.sunionstore(dst,source,'temp')
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def zAdd(self,name, map):
@@ -199,7 +199,7 @@ class LibRedis():
         :return: 添加成功数量，大于等于0
         """
         rv = self.redis.zadd(name,map)
-        logger.info("write dict to redis, rv(%d)", rv)
+        #logger.info("write dict to redis, rv(%d)", rv)
         return rv
 
     def zCard(self,name):
