@@ -44,7 +44,7 @@ def autoGetCK(num):
     while index < num:
         index = index + 1
         ip = rip()
-        url = "http://47.244.4.117:8200/useradmin/cookie"
+        url = "http://127.0.0.1:8200/useradmin/cookie"
         payload = dict(ip=rip(),debug='1',user=0)
         r = requests.get(url, params=payload)
         logger.debug('链接: ' + str(r.url))

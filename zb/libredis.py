@@ -19,6 +19,14 @@ class LibRedis():
         self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=db)
         #self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=CONF['redis']['db'])
 
+    def delete(self,*names):
+        """
+        "Delete one or more keys specified by ``names``"
+        :param names:
+        :return: 删除成功个数，0 or 1 or 其他
+        """
+        return self.redis.delete(*names)
+
     def strSet(self, key, value):
         """
         设置字符串的键值对
@@ -42,6 +50,50 @@ class LibRedis():
         rv = self.redis.get(key)
         logger.debug(rv)
         return rv
+
+    def listLPush(self,name, *value):
+        """
+        将一个值或多个值插入到列表头部，列表不存在，创建列表
+        :param name:列表名字
+        :param *value:
+        :return:列表元素个数
+        """
+        return self.redis.lpush(name, *value)
+
+    def listRPush(self,name, *value):
+        """
+        将一个值或多个值插入到列表尾部，列表不存在，创建列表
+        :param name:列表名字
+        :param *value:
+        :return:列表元素个数
+        """
+        return self.redis.rpush(name, *value)
+
+    def listLLen(self, name):
+        """
+        返回list的长度
+        :param name:
+        :return: 0 或者其他数字
+        """
+        return self.redis.llen(name)
+
+    def listLPop(self,name):
+        """
+        移除并获取列表的第一个元素
+        :param name:
+        :return: None or 元素
+        """
+        return self.redis.lpop(name)
+
+    def listLRange(self,name,start, end):
+        """
+        返回一个list
+        :param name:
+        :param start:
+        :param stop:
+        :return:数组，可能为空数组[]
+        """
+        return self.redis.lrange(name, start,end)
 
     def hashMSet(self,name, map):
         """
@@ -259,14 +311,6 @@ if __name__ == '__main__':
     test = dict(name='cooper', family='Liu')
     rv = crack.hashMSet('my', test)
     print(rv)
-    test = crack.hasGetAll('my')
-    print(test)
-    crack.hashSet('my', 'sex', 'mail')
-    test = crack.hasGetAll('my')
-    print(test)
-    crack.hashSet('my', 'sex', 'femeal')
-    test = crack.hasGetAll('my')
-    print(test)
 
     rv = crack.setAdd('redis', 'cooper')
     print(rv)
@@ -277,4 +321,31 @@ if __name__ == '__main__':
     print(crack.setCard('redis'))
     print(crack.setSmembers('redis'))
     crack.setSunionstore('dst', 'cknnsetconst')
+
+    rv = crack.listLPush('list', 'apple1')
+    print(rv)
+    rv = crack.listLPush('list', 'banba1')
+    print(rv)
+
+    list= crack.listLRange('list', 0, -1)
+    print list
+
+    list1= crack.listLRange('list1', 0, -1)
+    print list1
+
+    rv = crack.listRPush('list1', *list)
+    print(rv)
+
+    list1= crack.listLRange('list1', 0, -1)
+    print list1
+
+    num1 = crack.listLLen('list')
+    print(num1)
+    num1 = crack.listLLen('list1')
+    print(num1)
+    num1 = crack.listLLen('list2')
+    print(num1)
+
+    print(crack.listLPop('list1'))
+    print(crack.listLPop('list3'))
 """
