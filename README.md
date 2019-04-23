@@ -28,12 +28,16 @@ user15:
 
 5.用户的cookie可以直接存储在redis db中；
 
-6.支持提交任务；
+6.支持提交任务，任务提交在用户页面；
+
+7.总控制台
+	
+	http://192.168.100.133:8889/admin
 
 启动命令：
-
-	/usr/bin/python /usr/bin/gunicorn -w 10 -b :8200 -t 300 app:app &
-
+	
+	cd zb
+	gunicorn -c gunicorn.py app:app &
 ##任务分发模块：
 
 1.使用tcp方式；
@@ -45,6 +49,16 @@ user15:
 启动命令：
 
 	python taskServerV2.py &
+	
+##用户ck自动重置模块：
+
+1.使用定时器模式；
+
+2.在任务开始前两分钟内重置将要使用的cookie
+
+启动命令：
+	python ckReset.py &
+
 --------------------------------------------------------------------
 V1版本特征及问题：
 
