@@ -19,6 +19,14 @@ class LibRedis():
         self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=db)
         #self.redis = StrictRedis(host=CONF['redis']['host'], port=CONF['redis']['port'], db=CONF['redis']['db'])
 
+    def delete(self,*names):
+        """
+        "Delete one or more keys specified by ``names``"
+        :param names:
+        :return: 删除成功个数，0 or 1 or 其他
+        """
+        return self.redis.delete(*names)
+
     def strSet(self, key, value):
         """
         设置字符串的键值对
@@ -43,6 +51,50 @@ class LibRedis():
         logger.debug(rv)
         return rv
 
+    def listLPush(self,name, *value):
+        """
+        将一个值或多个值插入到列表头部，列表不存在，创建列表
+        :param name:列表名字
+        :param *value:
+        :return:列表元素个数
+        """
+        return self.redis.lpush(name, *value)
+
+    def listRPush(self,name, *value):
+        """
+        将一个值或多个值插入到列表尾部，列表不存在，创建列表
+        :param name:列表名字
+        :param *value:
+        :return:列表元素个数
+        """
+        return self.redis.rpush(name, *value)
+
+    def listLLen(self, name):
+        """
+        返回list的长度
+        :param name:
+        :return: 0 或者其他数字
+        """
+        return self.redis.llen(name)
+
+    def listLPop(self,name):
+        """
+        移除并获取列表的第一个元素
+        :param name:
+        :return: None or 元素
+        """
+        return self.redis.lpop(name)
+
+    def listLRange(self,name,start, end):
+        """
+        返回一个list
+        :param name:
+        :param start:
+        :param stop:
+        :return:数组，可能为空数组[]
+        """
+        return self.redis.lrange(name, start,end)
+
     def hashMSet(self,name, map):
         """
         设置字典
@@ -51,7 +103,7 @@ class LibRedis():
         :return: True or False
         """
         rv = self.redis.hmset(name,map)
-        logger.info("write dict to redis, rv(%s)", rv)
+        #logger.info("write dict to redis, rv(%s)", rv)
         if rv == 1:
             return True
         else:
@@ -79,7 +131,7 @@ class LibRedis():
         :return: None or 键值
         """
         rv = self.redis.hget(name,key)
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def hashGetAll(self,name):
@@ -99,7 +151,7 @@ class LibRedis():
         :return: true or False
         """
         rv = self.redis.hexists(name,key)
-        logger.info(rv)
+        #logger.info(rv)
         if rv == 1:
             return True
         else:
@@ -127,6 +179,16 @@ class LibRedis():
         rv = self.redis.hincrby(name,key,amount)
         return rv
 
+    def hashset(self,name, key, value):
+        """
+        Returns 1 if HSET created a new field, otherwise 0
+        :param name:
+        :param key:
+        :param value:
+        :return:Returns 1 if HSET created a new field, otherwise 0
+        """
+        return self.redis.hset(name,key,value)
+
     def hashHlen(self,name):
         """
         获取哈希表字段的数量
@@ -144,7 +206,7 @@ class LibRedis():
         :return: True or False
         """
         rv = self.redis.sadd(name,value)
-        logger.info(rv)
+        #logger.info(rv)
         if rv > 0:
             return True
         else:
@@ -157,7 +219,7 @@ class LibRedis():
         :return: 数字
         """
         num = self.redis.scard(name)
-        logger.info("setCard return(%d)", num)
+        #logger.info("setCard return(%d)", num)
         return num
 
     def setSmembers(self,name):
@@ -167,7 +229,7 @@ class LibRedis():
         :return: None or string
         """
         rv = self.redis.smembers(name)
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def setSpop(self,name):
@@ -177,7 +239,7 @@ class LibRedis():
         :return:
         """
         rv = self.redis.spop(name)
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def setSunionstore(self,dst,source):
@@ -188,7 +250,7 @@ class LibRedis():
         :return: the number of keys in the new set.
         """
         rv = self.redis.sunionstore(dst,source,'temp')
-        logger.info(rv)
+        #logger.info(rv)
         return rv
 
     def zAdd(self,name, map):
@@ -199,7 +261,7 @@ class LibRedis():
         :return: 添加成功数量，大于等于0
         """
         rv = self.redis.zadd(name,map)
-        logger.info("write dict to redis, rv(%d)", rv)
+        #logger.info("write dict to redis, rv(%d)", rv)
         return rv
 
     def zCard(self,name):
@@ -209,7 +271,7 @@ class LibRedis():
         :return: 数字
         """
         num = self.redis.zcard(name)
-        #logger.info("zCard return(%d)", num)
+        logger.info("zCard return(%d)", num)
         return num
 
     def zCount(self,name,min,max):
@@ -221,7 +283,7 @@ class LibRedis():
         :return: 数字
         """
         num = self.redis.zcount(name, min,max)
-        #logger.info("zCount return(%d)", num)
+        logger.info("zCount return(%d)", num)
         return num
 
     def zRangeByScore(self,name,min, max):
@@ -233,7 +295,7 @@ class LibRedis():
         :return: list [],
         """
         list = self.redis.zrangebyscore(name, min, max)
-        #logger.info(list)
+        logger.info(list)
         return list
 
     def zRange(self,name,min,max):
@@ -259,14 +321,6 @@ if __name__ == '__main__':
     test = dict(name='cooper', family='Liu')
     rv = crack.hashMSet('my', test)
     print(rv)
-    test = crack.hasGetAll('my')
-    print(test)
-    crack.hashSet('my', 'sex', 'mail')
-    test = crack.hasGetAll('my')
-    print(test)
-    crack.hashSet('my', 'sex', 'femeal')
-    test = crack.hasGetAll('my')
-    print(test)
 
     rv = crack.setAdd('redis', 'cooper')
     print(rv)
@@ -277,4 +331,31 @@ if __name__ == '__main__':
     print(crack.setCard('redis'))
     print(crack.setSmembers('redis'))
     crack.setSunionstore('dst', 'cknnsetconst')
+
+    rv = crack.listLPush('list', 'apple1')
+    print(rv)
+    rv = crack.listLPush('list', 'banba1')
+    print(rv)
+
+    list= crack.listLRange('list', 0, -1)
+    print list
+
+    list1= crack.listLRange('list1', 0, -1)
+    print list1
+
+    rv = crack.listRPush('list1', *list)
+    print(rv)
+
+    list1= crack.listLRange('list1', 0, -1)
+    print list1
+
+    num1 = crack.listLLen('list')
+    print(num1)
+    num1 = crack.listLLen('list1')
+    print(num1)
+    num1 = crack.listLLen('list2')
+    print(num1)
+
+    print(crack.listLPop('list1'))
+    print(crack.listLPop('list3'))
 """

@@ -173,5 +173,105 @@ def updateTaskStatus(task):
     task_id = task['task_id']
     crack.hashincr(task_id,'req')
 
+def now():
+    return time.strftime("%m-%d %H:%M:%S", time.localtime())
+
+def gstat_clear(userId):
+    stat = dict()
+    stat['pos'] = 0
+    stat['asigned'] = 0
+    stat['req'] = 0
+    stat['rereq'] = 0
+    stat['none'] = 0
+    stat['reset_ts'] = now()
+    crack = libredis.LibRedis(userId)
+    crack.hashMSet('g_stat', stat)
+
+def reset_records(userId):
+    CNT = 0
+    gstat_clear(userId)
+    crack = libredis.LibRedis(userId)
+    while crack.setCard(CONF['redis']['user']) > 0:
+        ip = crack.setSpop(CONF['redis']['user'])
+        if ip != None:
+            lens = crack.hashHlen(ip)
+            if lens == 0:
+                continue
+            record = crack.hashGetAll(ip)
+            CNT += 1
+            rv = crack.hashDel(ip, *record.keys())
+            logger.info('reset user(%s) hash rv(%d)', ip,rv)
+
+    #将cknnsetconst 复制一份，作为获取ck时的中间变量。
+    if CONF['random'] == True:
+        rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
+        if rv == 0:
+            logger.info('copy ck nickname set fail')
+    else:
+        num = crack.delete(CONF['redis']['live'])
+        logger.info('redis delete(%d) live list num=%d', userId, num)
+
+        const = crack.listLRange(CONF['redis']['const'],0,-1)
+        if len(const) == 0:
+            logger.error('redist const list is null')
+        rv = crack.listRPush(CONF['redis']['live'], *const)
+        if rv <= 0:
+            logger.error('write ck nickname to redis(%d) live list fail!!',userId)
+        else:
+            logger.info('write ck nickname to redis(%d) live list success, %d', userId,rv)
+
+    logger.info("%d records reset." ,CNT)
+    return CNT
+
+def resetTaskCK():
+    ou = dict(error=0,msg='ok',data=dict())
+
+    #任务存储在DB15中，故获取
+    crack = libredis.LibRedis(15)
+    if crack.zCard(CONF['redis']['begintask']) == 0:
+        ou['error'] = 1
+        ou['msg']   = 'no task'
+        return ou
+
+    #对比时间，如果时间不在范围内，不能提交
+    timestamp = int(time.time())
+    if crack.zCount(CONF['redis']['begintask'],timestamp-60*3, timestamp+60*3) == 0:
+        ou['error'] = 1
+        ou['msg']   = 'no task'
+        return ou
+
+    task_list = crack.zRangeByScore(CONF['redis']['begintask'], timestamp-60*3, timestamp+60*3)
+    if  len(task_list) == 0:
+        ou['error'] = 1
+        ou['msg']   = 'no task'
+        return ou
+
+    for task in task_list:
+        task_dict = crack.hashGetAll(task)
+        if task_dict == None:
+            logger.error('异常，在redis中找不到表项')
+            ou['error'] = 1
+            ou['msg'] = 'no task'
+            return ou
+        #logger.info(task_dict)
+        effective = int(task_dict['effective'])
+        if effective == 0:
+            continue
+        reset_done = int(task_dict['reset_done'])
+        if reset_done == 1:
+            continue
+
+        ## effective == 1 and reset_done == 0, 下面继续执行，准备复位ck
+        begin_timestamp = int(task_dict['begin_timestamp'])
+        if begin_timestamp >= timestamp - 120 and begin_timestamp <= timestamp + 120:
+            ##自动重置ck
+            userId = int(task_dict['user_id'])
+            reset_records(userId)
+            ##更新标志位
+            task_id = task_dict['task_id']
+            crack.hashset(task_id, 'reset_done', 1)
+            logger.info('%s set reset_done to 1', task_id)
+
+
 logger = gl.get_logger()
 CONF = gl.get_conf()
