@@ -46,23 +46,23 @@
             <td width="400" align="left">
                 <p color="red">创建提交任务：</p>
                 <form action="/useradmin/submit_task?user={{ user }}" enctype='multipart/form-data' method='POST'>
-                房间链接：<input type="text" class="form-control" name="room_url" size=60 value="https://www.douyu.com/657158">
+                房间链接：<input type="text" class="form-control" name="room_url" size=60 value="{{ task_records[0]['room_url'] }}">
                 </br></br>
                 ck链接：<input type="text" class="form-control" name="ck_url"  size=60 value="http://47.244.4.117:8200/useradmin/cookie?user={{ user }}">
                 </br></br>
                     开始时间： <input  id="begin_time" type="datetime-local" name="begin_time" value="2019-03-18T13:59:59" step="1"/>
                 </br></br>
-                    任务总时间(分钟)：<input type="text" size=5 name="total_time"   value="30"/>
+                    任务总时间(分钟)：<input type="text" size=5 name="total_time"   value="{{ task_records[0]['total_time'] }}"/>
                 </br></br>
-                    量级：<input type="text" class="form-control"  size=10 name="user_num"  value="10000">
+                    量级：<input type="text" class="form-control"  size=10 name="user_num"  value="{{ task_records[0]['user_num'] }}">
                 </br></br>
-                    停留时间范围(分钟)：<input type="text" class="form-control" size=5 name="last_time_from" placeholder="ID Index" value="5">
+                    停留时间范围(分钟)：<input type="text" class="form-control" size=5 name="last_time_from" placeholder="ID Index" value="{{ task_records[0]['last_time_from'] }}">
                                       ----
-                                      <input type="text" class="form-control" size=5 name="last_time_to" placeholder="ID Num" value="10">
+                                      <input type="text" class="form-control" size=5 name="last_time_to" placeholder="ID Num" value="{{ task_records[0]['last_time_to'] }}">
                 </br></br>
-                    投放时间间隔(秒)： <input type="text" size=5 name="time_gap"   value="6"/>
+                    投放时间间隔(秒)： <input type="text" size=5 name="time_gap"   value="{{ task_records[0]['time_gap'] }}"/>
                 </br></br>
-                    投放间隔次数：   <input type="text" size=5 name="gap_num"   value="100"/>
+                    投放间隔次数：   <input type="text" size=5 name="gap_num"   value="{{ task_records[0]['gap_num'] }}"/>
                 </br></br>
                     <input type="submit" value="  提交  ">
                 </form>

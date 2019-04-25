@@ -564,7 +564,7 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
     taskID = 'user%02d%04d' %(userId, Digit)
     task['task_id'] = taskID
     task['ck_url'] = ck_url+'&id='+taskID
-    content= '<t a="%d|20" flash="1" isBoot="1" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
+    content= '<t a="%d|20" flash="1" isBoot="0" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
              %( (int(total_time)) * 60, task['ck_url'], room_url,(int(last_time_from)) * 60, (int(last_time_to)) * 60)
     task['content'] = content
     logger.info(task)
@@ -604,10 +604,7 @@ def delTaskFromRedis(userId,task_id):
         logger.info('Task:%s, not exist!!', task_id)
         return False
     logger.info('Task:%s, exist!')
-    rv = crack.hashSet(task_id,'effective', 0)
-    if rv == False:
-        logger.info('Task:%s, del fail!!', task_id)
-        return False
+    crack.hashSet(task_id,'effective', 0)
     logger.info('Task:%s, del success!')
     return True
 

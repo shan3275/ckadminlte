@@ -1,4 +1,8 @@
-﻿body
+﻿.flex-container {
+  display: flex;
+  background-color: DodgerBlue;
+}
+body
 {
 	background-image:url('bird.png');
 	background-repeat:no-repeat;

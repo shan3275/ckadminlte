@@ -72,7 +72,7 @@ def task_th():
 if __name__ == '__main__':
     logger = gl.get_logger()
     CONF = gl.get_conf()
-    for i in range(0,1):
+    for i in range(0,10000):
         str = time.strftime('%Y-%m-%d %H:%M:%S')
         print '%s, num: %d'  %(str, i)
         task_th()

@@ -5,6 +5,7 @@
 # DateTime : 2019/1/9
 # SoftWare : PyCharm
 from flask import Blueprint, abort,Flask, request, jsonify, render_template, redirect,url_for, send_file, send_from_directory
+import flask_admin as admin
 import os,json
 from werkzeug.utils import secure_filename
 import chardet
@@ -18,6 +19,33 @@ import libcommon as libcommon
 
 global logger
 global CONF
+
+
+class MyHomeView(admin.AdminIndexView):
+    @admin.expose('/')
+    def index(self):
+        global g_stat
+        # 获取表项数量
+        count = libdb.LibDB().query_count(CONF['database']['table'])
+        if count != False:
+            Digit = count[0]
+        else:
+            Digit = '0'
+        g_stat['total'] = Digit
+        timestamp = int(time.time() - 3600 * 24 * 6)
+        conditions = 'lastdate >= %d' % (timestamp)
+        count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['table'])
+        if count != False:
+            Digit = count[0]
+        else:
+            Digit = '0'
+        g_stat['could_use'] = Digit
+        return self.render('admin/index.html',  g_stat=g_stat)
+
+
+
+admin_bp = admin.Admin(name="CK控制台", index_view=MyHomeView(url='/admin1'),template_mode='bootstrap3')
+
 
 def now():
     return time.strftime("%m-%d %H:%M:%S", time.localtime())
@@ -163,6 +191,8 @@ def admin():
     g_stat['could_use'] = Digit
     tasks = libcommon.getTaskList()
     return render_template("console.html",  g_stat=g_stat,task_records=tasks)
+
+
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()
