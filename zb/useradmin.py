@@ -5,12 +5,13 @@
 # DateTime : 2019/1/9
 # SoftWare : PyCharm
 from flask import Blueprint, abort,Flask, request, jsonify, render_template, redirect,url_for, send_file, send_from_directory
+import flask_admin as admin
 import os,json
-
 import chardet
 import time
 import datetime
-import urllib
+import urlparse
+from urllib import urlencode
 import random
 import globalvar as gl
 import libdb    as libdb
@@ -87,208 +88,302 @@ def cookie_append(records):
         g_records.append(t)
         g_stat['take_out_cks'] += 1
 
-useradmin_bp = Blueprint('useradmin', __name__, template_folder='templates/html',static_folder="templates/html",static_url_path="")
-@useradmin_bp.route('/upload', methods=['POST', 'GET'])
-def upload():
+def urlAddPara(url, params):
     """
-    测试命令：curl -F "file=@/Users/liudeshan/work/studycase/script/flask/zb/2.csv" -X  "POST" http://localhost:8888/strapi/upload
+    给url增加参数，拼装新的链接
+    :param url: 带参数，或者不带
+    :param params: 字典形式 {'lang':'en','tag':'python'}
     :return:
     """
-    logger.debug('request.method:%s', request.method)
-    logger.debug('request.files:%s', request.files['file'])
-    userIdStr = request.args.get('user')
-    if userIdStr != None:
-        userId = int(userIdStr)
-    else:
-        # default 0
-        userId = 0
-    logger.debug('upload user=%d', userId)
-    if request.method == 'POST':
-        #保存文件
-        ou = libcommon.writeFileToRedis(request.files['file'],userId)
-        if ou == True :
-            return redirect(url_for('useradmin.admin',user=userId))
+    url_parts = list(urlparse.urlparse(url))
+    query = dict(urlparse.parse_qsl(url_parts[4]))
+    query.update(params)
+
+    url_parts[4] = urlencode(query)
+
+    return urlparse.urlunparse(url_parts)
+
+class UserHomeView(admin.AdminIndexView):
+    @admin.expose('/')
+    def index(self):
+        userIdStr = request.args.get('user')
+        if userIdStr != None:
+            userId = int(userIdStr)
         else:
-            return json.dumps(ou)
+            refer = request.referrer
+            if refer == None:
+                userId = 0
+            else:
+                para_str = urlparse.urlsplit(refer).query
+                param = urlparse.parse_qs(para_str)
+                logger.info(param)
+                if param.has_key('user'):
+                    para_dict = dict(user=param['user'][0])
+                    logger.info(para_dict)
+                    url = urlAddPara(request.url, para_dict)
+                    return redirect(url)
+        # 获取表项数量
+        stat = libredis.LibRedis(userId).hashGetAll('g_stat')
+        tasks = libcommon.getUserTaskList(userId)
+        return self.render('useradmin/index.html',  g_stat=stat,user=userId, task_records=tasks)
 
-    else:
-        return redirect(url_for('useradmin.admin',user=userId))
 
-@useradmin_bp.route('/act_clear', methods=['POST', 'GET'])
-def act_clear():
-    userIdStr = request.args.get('user')
-    if userIdStr != None:
-        userId = int(userIdStr)
-    else:
-        #default 0
-        userId = 0
-    CNT = libcommon.clear_records(userId)
-    return redirect(url_for('useradmin.admin',user=userId))
+    @admin.expose('/useradmin1')
+    def useradmin1(self):
+        userIdStr = request.args.get('user')
+        if userIdStr != None:
+            userId = int(userIdStr)
+        else:
+            refer = request.referrer
+            if refer == None:
+                userId = 0
+            else:
+                para_str = urlparse.urlsplit(refer).query
+                param = urlparse.parse_qs(para_str)
+                logger.info(param)
+                if param.has_key('user'):
+                    para_dict = dict(user=param['user'][0])
+                    logger.info(para_dict)
+                    url = urlAddPara(request.url, para_dict)
+                    return redirect(url)
+        # 获取表项数量
+        stat = libredis.LibRedis(userId).hashGetAll('g_stat')
+        tasks = libcommon.getUserTaskList(userId)
+        return self.render('useradmin.html',  g_stat=stat,user=userId, task_records=tasks)
 
-@useradmin_bp.route('/act_reset', methods=['POST', 'GET'])
-def act_reset():
-    userIdStr = request.args.get('user')
-    if userIdStr != None:
-        userId = int(userIdStr)
-    else:
-        #default 0
-        userId = 0
-    CNT = libcommon.reset_records(userId)
-
-    return redirect(url_for('useradmin.admin',user=userId))
-
-#@useradmin_bp.route('/act_save', methods=['POST', 'GET'])
-def act_save():
-    file = def_file_get()
-    CNT = save_records(file)
-    return redirect(url_for('useradmin.admin'))
-
-#@useradmin_bp.route("/act_download", methods=['POST', 'GET'])
-def download():
-    # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
-    directory = os.getcwd()  # 假设在当前目录
-    file = def_file_get()
-    return send_from_directory(directory, file, as_attachment=True)
-
-@useradmin_bp.route('/take_out_cks', methods=['POST', 'GET'])
-def take_out_cks():
-    global g_stat
-    if request.method == 'POST':
+    @admin.expose('/upload',methods=('GET', 'POST'))
+    def upload(self):
+        """
+        测试命令：curl -F "file=@/Users/liudeshan/work/studycase/script/flask/zb/2.csv" -X  "POST" http://localhost:8888/strapi/upload
+        :return:
+        """
+        logger.debug('request.method:%s', request.method)
+        logger.debug('request.files:%s', request.files['file'])
         userIdStr = request.args.get('user')
         if userIdStr != None:
             userId = int(userIdStr)
         else:
             # default 0
             userId = 0
-        cks_num  = request.form.get('ck_num')
-        #读取cookie从数据库
-        records = libcommon.takeOutCksFromDB(cks_num)
-        if records != False and records != None:
-            cookie_append(records)
-    return redirect(url_for('useradmin.admin', user=userId))
+        logger.debug('upload user=%d', userId)
+        if request.method == 'POST':
+            # 保存文件
+            ou = libcommon.writeFileToRedis(request.files['file'], userId)
+            if ou == True:
+                return redirect(url_for('useradmin.index', user=userId))
+            else:
+                return json.dumps(ou)
+        else:
+            return redirect(url_for('useradmin.index', user=userId))
 
-@useradmin_bp.route('/take_cks_by_id', methods=['POST', 'GET'])
-def take_cks_by_id():
-    global g_stat
-    if request.method == 'POST':
-        ck_id_from  = request.form.get('ck_index')
-        ck_num    = request.form.get('ck_num')
+    @admin.expose('/take_cks_by_id',methods=('GET', 'POST'))
+    def take_cks_by_id(self):
+        global g_stat
+        if request.method == 'POST':
+            ck_id_from = request.form.get('ck_index')
+            ck_num = request.form.get('ck_num')
+            userIdStr = request.args.get('user')
+            if userIdStr != None:
+                userId = int(userIdStr)
+            else:
+                # default 0
+                userId = 0
+            logger.debug('ck_id_from: %s, ck_num: %s', ck_id_from, ck_num)
+            libcommon.takeOutCksFromDBToRedis(int(ck_id_from), int(ck_num), userId)
+        return redirect(url_for('useradmin.index', user=userId))
+
+    @admin.expose('/take_out_cks', methods=['POST', 'GET'])
+    def take_out_cks(self):
+        global g_stat
+        if request.method == 'POST':
+            userIdStr = request.args.get('user')
+            if userIdStr != None:
+                userId = int(userIdStr)
+            else:
+                # default 0
+                userId = 0
+            cks_num = request.form.get('ck_num')
+            # 读取cookie从数据库
+            records = libcommon.takeOutCksFromDB(cks_num)
+            if records != False and records != None:
+                cookie_append(records)
+        return redirect(url_for('useradmin.index', user=userId))
+
+    @admin.expose('/act_reset', methods=['POST', 'GET'])
+    def act_reset(self):
         userIdStr = request.args.get('user')
         if userIdStr != None:
             userId = int(userIdStr)
         else:
             # default 0
             userId = 0
-        logger.debug('ck_id_from: %s, ck_num: %s',ck_id_from,ck_num)
-        libcommon.takeOutCksFromDBToRedis(int(ck_id_from), int(ck_num), userId)
-    return redirect(url_for('useradmin.admin', user=userId))
+        CNT = libcommon.reset_records(userId)
+        return redirect(url_for('useradmin.index', user=userId))
 
-
-@useradmin_bp.route('/submit_task', methods=['POST', 'GET'])
-def submit_task():
-    global g_stat
-    if request.method == 'POST':
-        room_url    = request.form.get('room_url')
-        ck_url      = request.form.get('ck_url')
-        begin_time    = request.form.get('begin_time')
-        total_time    = request.form.get('total_time')
-        user_num      = request.form.get('user_num')
-        last_time_from = request.form.get('last_time_from')
-        last_time_to   = request.form.get('last_time_to')
-        time_gap       = request.form.get('time_gap')
-        gap_num        = request.form.get('gap_num')
+    @admin.expose('/act_clear', methods=['POST', 'GET'])
+    def act_clear(self):
         userIdStr = request.args.get('user')
         if userIdStr != None:
             userId = int(userIdStr)
         else:
             # default 0
             userId = 0
-        logger.debug('room_url: %s, ck_url: %s',room_url, ck_url)
-        logger.debug('begin_time: %s, total_time:%s', begin_time, total_time)
-        logger.debug('user_num: %s', user_num)
-        logger.debug('last_time_from:%s, last_time_to:%s', last_time_from, last_time_to)
-        logger.debug('time_gap:%s, gap_num:%s', time_gap, gap_num)
-        libcommon.writeTaskToRedis(userId,room_url, ck_url, begin_time, total_time, \
-                                        user_num, last_time_from, last_time_to, time_gap, gap_num)
-    return redirect(url_for('useradmin.admin', user=userId))
+        CNT = libcommon.clear_records(userId)
+        return redirect(url_for('useradmin.index', user=userId))
 
-@useradmin_bp.route('/del_task', methods=['POST', 'GET'])
-def del_task():
-    global g_stat
-    if request.method == 'POST':
-        task_id    = request.form.get('task_id')
+    # @admin.expose('/act_save', methods=['POST', 'GET'])
+    def act_save(self):
+        file = def_file_get()
+        CNT = save_records(file)
+        return redirect(url_for('useradmin2.admin'))
+
+    # @admin.expose("/act_download", methods=['POST', 'GET'])
+    def download(self):
+        # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
+        directory = os.getcwd()  # 假设在当前目录
+        file = def_file_get()
+        return send_from_directory(directory, file, as_attachment=True)
+
+    @admin.expose('/cookie', methods=['GET'])
+    def cookie(self):
+        ##调试模式传递IP
+        debug = request.args.get('debug')
+        if debug != None:
+            ip = request.args.get('ip')
+            if ip == None:
+                ip = '127.0.0.1'
+        else:
+            ##nginx 反向代理，获取真实IP
+            if request.headers.has_key('X-Forwarded-For') == True:
+                real_ip = request.headers['X-Forwarded-For']
+                if real_ip != None:
+                    if len(real_ip.split(',')) > 1:
+                        ip = real_ip.split(",")[1]
+                    else:
+                        ip = real_ip
+            else:
+                ##未使用nginx反向代理，获取真实IP
+                ip = request.remote_addr
+
         userIdStr = request.args.get('user')
         if userIdStr != None:
             userId = int(userIdStr)
         else:
             # default 0
             userId = 0
-        logger.debug('Task_id: %s',task_id)
-        libcommon.delTaskFromRedis(userId,task_id)
-    return redirect(url_for('useradmin.admin', user=userId))
-
-@useradmin_bp.route('/', methods=['POST', 'GET'])
-def admin():
-    userIdStr = request.args.get('user')
-    if userIdStr != None:
-        userId = int(userIdStr)
-    else:
-        #default 0
-        userId = 0
-    #获取表项数量
-    stat  = libredis.LibRedis(userId).hashGetAll('g_stat')
-    tasks = libcommon.getUserTaskList(userId)
-    return render_template("useradmin.html", g_stat=stat,user=userId,task_records=tasks)
-
-@useradmin_bp.route('/cookie',methods=['GET'])
-def cookie():
-    ##调试模式传递IP
-    debug =  request.args.get('debug')
-    if debug != None:
-        ip = request.args.get('ip')
-        if ip == None:
-            ip = '127.0.0.1'
-    else:
-        ##nginx 反向代理，获取真实IP
-        if request.headers.has_key('X-Forwarded-For') == True:
-            real_ip = request.headers['X-Forwarded-For']
-            if real_ip != None:
-                if len(real_ip.split(',')) > 1:
-                    ip = real_ip.split(",")[1]
-                else:
-                    ip = real_ip
+        taskID = request.args.get('id')
+        crack = libredis.LibRedis(userId)
+        crack.hashincr('g_stat', 'req')
+        record = libcommon.get_record_from_redis(ip, userId)
+        if record == None:
+            record = libcommon.fetch_record_from_redis(ip, userId)
         else:
-            ##未使用nginx反向代理，获取真实IP
-            ip = request.remote_addr
+            crack.hashincr('g_stat', 'rereq')
 
-    userIdStr = request.args.get('user')
-    if userIdStr != None:
-        userId = int(userIdStr)
-    else:
-        #default 0
-        userId = 0
-    taskID = request.args.get('id')
-    crack = libredis.LibRedis(userId)
-    crack.hashincr('g_stat','req')
-    record = libcommon.get_record_from_redis(ip,userId)
-    if record == None:
-        record = libcommon.fetch_record_from_redis(ip, userId)
-    else:
-        crack.hashincr('g_stat','rereq')
+        if record == None:
+            cookie = "None"
+            crack.hashincr('g_stat', 'none')
+        else:
+            cookie = record['cookie']
+            crack.hashincr('g_stat', 'asigned')
 
-    if record == None:
-        cookie = "None"
-        crack.hashincr('g_stat','none')
-    else:
-        cookie = record['cookie']
-        crack.hashincr('g_stat','asigned')
+        rep = {'ip': ip, 'cookie': cookie}
 
-    rep = {'ip':ip, 'cookie': cookie}
+        libcommon.updateTaskCKReq(taskID)
 
-    libcommon.updateTaskCKReq(taskID)
+        # logger.debug(rep)
+        return jsonify(rep)
 
-    #logger.debug(rep)
-    return jsonify(rep)
+    @admin.expose('/submit_task', methods=['POST', 'GET'])
+    def submit_task(self):
+        global g_stat
+        if request.method == 'POST':
+            room_url = request.form.get('room_url')
+            ck_url = request.form.get('ck_url')
+            begin_time = request.form.get('begin_time')
+            total_time = request.form.get('total_time')
+            user_num = request.form.get('user_num')
+            last_time_from = request.form.get('last_time_from')
+            last_time_to = request.form.get('last_time_to')
+            time_gap = request.form.get('time_gap')
+            gap_num = request.form.get('gap_num')
+            userIdStr = request.args.get('user')
+            if userIdStr != None:
+                userId = int(userIdStr)
+            else:
+                # default 0
+                userId = 0
+            logger.debug('room_url: %s, ck_url: %s', room_url, ck_url)
+            logger.debug('begin_time: %s, total_time:%s', begin_time, total_time)
+            logger.debug('user_num: %s', user_num)
+            logger.debug('last_time_from:%s, last_time_to:%s', last_time_from, last_time_to)
+            logger.debug('time_gap:%s, gap_num:%s', time_gap, gap_num)
+            libcommon.writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
+                                       user_num, last_time_from, last_time_to, time_gap, gap_num)
+        return redirect(url_for('useradmin.index', user=userId))
+
+    @admin.expose('/del_task', methods=['POST', 'GET'])
+    def del_task(self):
+        global g_stat
+        if request.method == 'POST':
+            task_id = request.form.get('task_id')
+            userIdStr = request.args.get('user')
+            if userIdStr != None:
+                userId = int(userIdStr)
+            else:
+                # default 0
+                userId = 0
+            logger.debug('Task_id: %s', task_id)
+            libcommon.delTaskFromRedis(userId, task_id)
+        return redirect(url_for('useradmin.index', user=userId))
+
+    @admin.expose('/new/', methods=('GET', 'POST'))
+    def create_view(self):
+        # render your view here
+        return "Hello World"
+
+# Create custom admin view
+class UserTaskView(admin.BaseView):
+    @admin.expose('/')
+    def index(self):
+        userIdStr = request.args.get('user')
+        if userIdStr != None:
+            userId = int(userIdStr)
+        else:
+            refer = request.referrer
+            if refer == None:
+                userId = 0
+            else:
+                para_str = urlparse.urlsplit(refer).query
+                param = urlparse.parse_qs(para_str)
+                logger.info(param)
+                if param.has_key('user'):
+                    para_dict = dict(user=param['user'][0])
+                    logger.info(para_dict)
+                    url = urlAddPara(request.url, para_dict)
+                    return redirect(url)
+        tasks = libcommon.getUserTaskList(userId)
+        if not tasks:
+            task = dict()
+            task['room_url'] = 'https://www.douyu.com/657158'
+            task['total_time'] = '30'
+            task['user_num'] = '10000'
+            task['last_time_from'] = 23
+            task['last_time_to'] = 25
+            task['time_gap'] = 6
+            task['gap_num'] = 100
+            task['task_id'] = 'user100001'
+        else:
+            task = tasks[0]
+        return self.render('useradmin/usertask.html',task_records=task, user=userId)
+
+    @admin.expose('/new/', methods=('GET', 'POST'))
+    def create_view(self):
+        # render your view here
+        return "Hello"
+
+userAdmin_bp = admin.Admin(name="用户控制台",index_view=UserHomeView(url='/useradmin',endpoint='useradmin'), template_mode='bootstrap3')
+userAdmin_bp.add_view(UserTaskView(name='Task',endpoint='usertask'))
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

@@ -21,8 +21,7 @@ from werkzeug.contrib.fixers import ProxyFix
 import inits
 import globalvar as gl
 from strapi     import strapi_bp
-from useradmin  import useradmin_bp
-from stradmin   import stradmin_bp
+from useradmin  import userAdmin_bp
 from stradmin   import admin_bp
 import libdb as libdb
 global logger
@@ -34,10 +33,10 @@ CUR_PORT = DEF_PORT
 #app = Flask(__name__, template_folder="templates/html",static_folder="templates/html",static_url_path="")
 app = Flask(__name__)
 app.register_blueprint(strapi_bp,   url_prefix='/strapi')
-app.register_blueprint(useradmin_bp, url_prefix='/useradmin')
-app.register_blueprint(stradmin_bp, url_prefix='/admin')
 
 admin_bp.init_app(app)
+userAdmin_bp.init_app(app)
+
 
 # set the secret key.  keep this really secret:
 app.secret_key = '\xe5\xcc\xc5\xd9+\xfbC\xc6\xdbD\x1af\xe0\xa6*\xeb$\xa7\xe4\xf6p~\x01\xaf'

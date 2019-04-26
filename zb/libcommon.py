@@ -82,6 +82,9 @@ def cookie_load_for_db(path):
             line = line.replace('\xef\xbb\xbf', '')  # 用replace替换掉'\xef\xbb\xbf'
         line = line.strip('\n')
         cdet = chardet.detect(line)
+        if cdet['encoding'] == None:
+            logger.info(cdet)
+            continue
         if cdet['encoding'].lower().find("utf-8") == 0 :
             u8str = line
         else:

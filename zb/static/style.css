@@ -1,0 +1,241 @@
+﻿body
+{
+	background-image:url('bird.png');
+	background-repeat:no-repeat;
+	background-position:right top;
+	margin-right:200px;
+}
+table{
+table-layout: fixed;
+word-break: break-all;
+word-wrap: break-word; //表格固定布局
+}
+.award-name{
+-o-text-overflow:ellipsis;
+text-overflow:ellipsis;
+overflow:hidden;
+white-space:nowrap;
+width:100%; //超出部分显示省略号}
+/* ----------------------------------------------------------------------------------- */
+/* Border styles */
+#table-1 thead, #table-1 tr {
+border-top-width: 1px;
+border-top-style: solid;
+border-top-color: rgb(230, 189, 189);
+}
+#table-1 {
+border-bottom-width: 1px;
+border-bottom-style: solid;
+border-bottom-color: rgb(230, 189, 189);
+}
+
+/* Padding and font style */
+#table-1 td, #table-1 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+color: rgb(177, 106, 104);
+}
+
+/* Alternating background colors */
+#table-1 tr:nth-child(even) {
+background: rgb(238, 211, 210)
+}
+#table-1 tr:nth-child(odd) {
+background: #FFF
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Border styles */
+#table-2 thead, #table-2 tr {
+border-top-width: 1px;
+border-top-style: solid;
+border-top-color: rgb(230, 189, 189);
+}
+#table-2 {
+border-bottom-width: 1px;
+border-bottom-style: solid;
+border-bottom-color: rgb(230, 189, 189);
+}
+
+/* Padding and font style */
+#table-2 td, #table-2 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+color: rgb(177, 106, 104);
+}
+
+/* Alternating background colors */
+#table-2 tr:nth-child(even) {
+background: rgb(238, 211, 210)
+}
+#table-2 tr:nth-child(odd) {
+background: #FFF
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Border styles */
+#table-3 thead, #table-3 tr {
+border-top-width: 1px;
+border-top-style: solid;
+border-top-color: rgb(235, 242, 224);
+}
+#table-3 {
+border-bottom-width: 1px;
+border-bottom-style: solid;
+border-bottom-color: rgb(235, 242, 224);
+}
+
+/* Padding and font style */
+#table-3 td, #table-3 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+color: rgb(149, 170, 109);
+}
+
+/* Alternating background colors */
+#table-3 tr:nth-child(even) {
+background: rgb(230, 238, 214)
+}
+#table-3 tr:nth-child(odd) {
+background: #FFF
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Border styles */
+#table-4 thead, #table-4 tr {
+border-top-width: 1px;
+border-top-style: solid;
+border-top-color: rgb(211, 202, 221);
+}
+#table-4 {
+border-bottom-width: 1px;
+border-bottom-style: solid;
+border-bottom-color: rgb(211, 202, 221);
+}
+
+/* Padding and font style */
+#table-4 td, #table-4 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+color: rgb(95, 74, 121);
+}
+
+/* Alternating background colors */
+#table-4 tr:nth-child(even) {
+background: rgb(223, 216, 232)
+}
+#table-4 tr:nth-child(odd) {
+background: #FFF
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Table Head */
+#table-5 thead th {
+background-color: rgb(156, 186, 95);
+color: #fff;
+border-bottom-width: 0;
+}
+
+/* Column Style */
+#table-5 td {
+color: #000;
+}
+/* Heading and Column Style */
+#table-5 tr, #table-5 th {
+border-width: 1px;
+border-style: solid;
+border-color: rgb(156, 186, 95);
+}
+
+/* Padding and font style */
+#table-5 td, #table-5 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+font-weight: bold;
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Table Head */
+#table-6 thead th {
+background-color: rgb(128, 102, 160);
+color: #fff;
+border-bottom-width: 0;
+}
+
+/* Table Head */
+#table-5 thead th {
+background-color: rgb(156, 186, 95);
+color: #fff;
+border-bottom-width: 0;
+}
+
+/* Column Style */
+#table-5 td {
+color: #000;
+}
+/* Heading and Column Style */
+#table-5 tr, #table-5 th {
+border-width: 1px;
+border-style: solid;
+border-color: rgb(156, 186, 95);
+}
+
+/* Padding and font style */
+#table-5 td, #table-5 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+font-weight: bold;
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Column Style */
+#table-6 td {
+color: #000;
+}
+/* Heading and Column Style */
+#table-6 tr, #table-6 th {
+border-width: 1px;
+border-style: solid;
+border-color: rgb(128, 102, 160);
+}
+
+/* Padding and font style */
+#table-6 td, #table-6 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+font-weight: bold;
+}
+
+/* ----------------------------------------------------------------------------------- */
+/* Table Head */
+#table-7 thead th {
+background-color: rgb(81, 130, 187);
+color: #fff;
+border-bottom-width: 0;
+}
+
+/* Column Style */
+#table-7 td {
+color: #000;
+}
+/* Heading and Column Style */
+#table-7 tr, #table-7 th {
+border-width: 1px;
+border-style: solid;
+border-color: rgb(81, 130, 187);
+}
+
+/* Padding and font style */
+#table-7 td, #table-7 th {
+padding: 5px 10px;
+font-size: 12px;
+font-family: Verdana;
+font-weight: bold;
+}

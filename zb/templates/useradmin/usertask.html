@@ -1,0 +1,159 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+
+<form action="/useradmin/submit_task?user={{ user }}" method="POST" role="form" class="admin-form form-horizontal" enctype="multipart/form-data">
+  <div class="form-group">
+    <label for="room_url" class="col-md-2 control-label">房间链接
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="room_url" name="room_url" type="text" value="{{ task_records['room_url'] }}">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="ck_url" class="col-md-2 control-label">CK链接
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="ck_url" name="ck_url" type="text" value="http://47.244.4.117:8200/useradmin/cookie?user={{ user }}">
+    </div>
+</div>
+
+  <div class="form-group">
+    <label for="begin_time" class="col-md-2 control-label">开始时间
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="begin_time" name="begin_time" type="datetime-local" value="2019-03-18T13:59:59" step="1">
+    </div>
+</div>
+
+
+  <div class="form-group">
+    <label for="total_time" class="col-md-2 control-label">任务总时间(分钟)
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="total_time" name="total_time" type="text"  value="{{ task_records['total_time'] }}">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="user_num" class="col-md-2 control-label">量级
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="user_num" name="user_num" type="text"  value="{{ task_records['user_num'] }}">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="last_time" class="col-md-2 control-label">停留时间范围(分钟)
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <div class="row">
+        <div class="col-md-4">
+          <input class="form-control" id="last_time_from" name="last_time_from" type="text"  value="{{ task_records['last_time_from'] }}">
+        </div>
+        <div class="col-md-4">
+          <input class="form-control" id="last_time_to"   name="last_time_to"   type="text"  value="{{ task_records['last_time_to']   }}">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <div class="form-group">
+    <label for="time_gap" class="col-md-2 control-label">投放时间间隔(秒)
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="time_gap" name="time_gap" type="text"  value="{{ task_records['time_gap'] }}">
+    </div>
+  </div>
+
+
+  <div class="form-group">
+    <label for="gap_num" class="col-md-2 control-label">投放间隔次数
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="gap_num" name="gap_num" type="text"  value="{{ task_records['gap_num'] }}">
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="form-group">
+      <div class="col-md-offset-2 col-md-10 submit-row">
+        <input type="submit" class="btn btn-primary" value="提交" />
+      </div>
+  </div>
+
+</form>
+
+  <hr>
+  <hr>
+
+<form action="/useradmin/del_task?user={{ user }}" class="admin-form form-horizontal" enctype='multipart/form-data' method='POST'>
+    <div class="form-group">
+    <label for="task_id" class="col-md-2 control-label">撤销任务ID
+        &nbsp;
+    </label>
+    <div class="col-md-10">
+      <input class="form-control" id="task_id" name="task_id" type="text"  value="{{ task_records['task_id'] }}">
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="form-group">
+      <div class="col-md-offset-2 col-md-10 submit-row">
+        <input type="submit" class="btn btn-primary" value="提交" />
+      </div>
+  </div>
+
+</form>
+{% block tail_js %}
+{{ super() }}
+    {% if admin_view.extra_js %}
+      {% for js_url in admin_view.extra_js %}
+        <script src="{{ js_url }}" type="text/javascript"></script>
+      {% endfor %}
+    {% endif %}
+<script language="JavaScript">
+            var t=document.getElementById("begin_time");
+            var now = new Date();
+            var year = now.getFullYear();       //年
+            var month = now.getMonth() + 1;     //月
+            var day = now.getDate();            //日
+            var hh = now.getHours();            //时
+            var mm = now.getMinutes();          //分
+            var sec = now.getSeconds();
+            var clock = year + "-";
+
+            if(month < 10)
+                clock += "0";
+
+            clock += month + "-";
+
+            if(day < 10)
+                clock += "0";
+
+            clock += day + "T";
+
+            if(hh < 10)
+                clock += "0";
+
+            clock += hh + ":";
+            if (mm < 10) clock += '0';
+            clock += mm + ":" ;
+            if (sec < 10) sec += '0';
+            clock += sec ;
+            t.value = clock;
+    </script>
+{% endblock %}
+{% endblock %}
