@@ -6,6 +6,9 @@
 # SoftWare : PyCharm
 from flask import Blueprint, abort,Flask, request, jsonify, render_template, redirect,url_for, send_file, send_from_directory
 import flask_admin as admin
+from flask_admin.contrib import sqla
+from flask_admin.contrib.sqla.form import AdminModelConverter
+from flask_sqlalchemy import SQLAlchemy
 import os,json
 from werkzeug.utils import secure_filename
 import chardet
@@ -197,8 +200,52 @@ class AdminTaskView(admin.BaseView):
         # render your view here
         return "Hello"
 
+
+admin_db_bp = SQLAlchemy()
+db = admin_db_bp
+# Create models
+class User(db.Model):
+    __tablename__='cktb'
+    id = db.Column(db.Integer, primary_key=True)
+    uid = db.Column(db.Integer)
+    nickname = db.Column(db.String(20),unique=True)
+    password = db.Column(db.String(32))
+    regdate = db.Column(db.Integer)
+    cookie   = db.Column(db.Text)
+
+    def __str__(self):
+        return "{}, {}".format(self.nickname, self.password)
+
+    def __repr__(self):
+        return "{}: {}".format(self.id, self.__str__())
+
+
+class MyModelConverter(AdminModelConverter):
+    pass
+
+class UserAdmin(sqla.ModelView):
+    #can_create = False
+    #can_export = True
+    model_form_converter = MyModelConverter
+    action_disallowed_list = ['delete', ]
+    can_view_details = True
+    column_display_pk = True
+    column_list = [
+        'id',
+        'uid',
+        'nickname',
+        'password',
+        'regdate',
+        'cookie',
+    ]
+    column_default_sort = [('nickname', False), ('password', False)]  # sort on multiple columns
+
+
 admin_bp = admin.Admin(name="CK控制台",index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
 admin_bp.add_view(AdminTaskView(name='Task',endpoint='task'))
+
+
+admin_bp.add_view(UserAdmin(User, db.session))
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

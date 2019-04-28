@@ -23,6 +23,7 @@ import globalvar as gl
 from strapi     import strapi_bp
 from useradmin  import userAdmin_bp
 from stradmin   import admin_bp
+from stradmin   import admin_db_bp
 import libdb as libdb
 global logger
 global CONF
@@ -32,9 +33,14 @@ CUR_PORT = DEF_PORT
 
 #app = Flask(__name__, template_folder="templates/html",static_folder="templates/html",static_url_path="")
 app = Flask(__name__)
-app.register_blueprint(strapi_bp,   url_prefix='/strapi')
+app.config.from_pyfile('config.py')
+app.register_blueprint(strapi_bp,   url_prefix='/strapi')  #api接口
 
+#配置界面主题，可选参数：Cerulean  Cosmo  Cyborg Darkly Flatly Journal
+# Lumen Paper Readable Sandstone Simplex Slate Spacelab Superhero United Yeti
+app.config['FLASK_ADMIN_SWATCH'] = 'Yeti'
 admin_bp.init_app(app)
+admin_db_bp.init_app(app)
 userAdmin_bp.init_app(app)
 
 
