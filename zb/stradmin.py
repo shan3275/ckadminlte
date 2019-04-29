@@ -9,6 +9,8 @@ import flask_admin as admin
 from flask_admin.contrib import sqla
 from flask_admin.contrib.sqla.form import AdminModelConverter
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import Form
+from wtforms.fields.html5 import DateField
 import os,json
 from werkzeug.utils import secure_filename
 import chardet
@@ -27,7 +29,6 @@ def now():
     return time.strftime("%m-%d %H:%M:%S", time.localtime())
 g_stat = {"cycle":1, "pos":0,'could_use':0, "total":0, "asigned":0, "req":0, "rereq":0, "none":0, "boot_ts": now(), "reset_ts":now()}
 g_records = []
-g_cnt = {}
 
 
 def cookie_append(records):
@@ -226,6 +227,8 @@ class MyModelConverter(AdminModelConverter):
 class UserAdmin(sqla.ModelView):
     #can_create = False
     #can_export = True
+    #form_args = dict(regdate=((int)(time.time())))
+    column_formatters = dict(regdate=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.regdate))
     model_form_converter = MyModelConverter
     action_disallowed_list = ['delete', ]
     can_view_details = True
