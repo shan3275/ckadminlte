@@ -8,9 +8,12 @@ from flask import Blueprint, abort,Flask, request, jsonify, render_template, red
 import flask_admin as admin
 from flask_admin.contrib import sqla
 from flask_admin.contrib.sqla.form import AdminModelConverter
+from flask_admin.contrib.sqla.form import InlineModelConverter
+from flask_admin import helpers as admin_helpers
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import Form
-from wtforms.fields.html5 import DateField
+from flask_security import Security, SQLAlchemyUserDatastore, \
+    UserMixin, RoleMixin, login_required, current_user
+from flask_security.utils import encrypt_password
 import os,json
 from werkzeug.utils import secure_filename
 import chardet
@@ -91,7 +94,7 @@ class MyHomeView(admin.AdminIndexView):
         else:
             Digit = '0'
         g_stat['could_use'] = Digit
-        return self.render('admin/index.html',  g_stat=g_stat)
+        return self.render('stradmin/index.html',  g_stat=g_stat)
 
     @admin.expose('/download', methods=['POST'])
     def download(self):
@@ -189,23 +192,46 @@ class MyHomeView(admin.AdminIndexView):
         tasks = libcommon.getTaskList()
         return self.render("console.html", g_stat=g_stat, task_records=tasks)
 
+admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html',index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
+#admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html', template_mode='bootstrap3',url='/admin',endpoint='admin')
+
+
 # Create custom admin view
 class AdminTaskView(admin.BaseView):
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                current_user.has_role('superuser')
+        )
+
+    def _handle_view(self, name, **kwargs):
+        """
+        Override builtin _handle_view in order to redirect users when a view is not accessible.
+        """
+        if not self.is_accessible():
+            if current_user.is_authenticated:
+                # permission denied
+                abort(403)
+            else:
+                # login
+                return redirect(url_for('security.login', next=request.url))
+
     @admin.expose('/')
     def index(self):
         tasks = libcommon.getTaskList()
-        return self.render('admin/admintask.html',  task_records=tasks)
+        return self.render('stradmin/task.html',  task_records=tasks)
 
     @admin.expose('/new/', methods=('GET', 'POST'))
     def create_view(self):
         # render your view here
         return "Hello"
 
+admin_bp.add_view(AdminTaskView(name='Task',endpoint='task'))
 
 admin_db_bp = SQLAlchemy()
 db = admin_db_bp
 # Create models
-class User(db.Model):
+class Cktb(db.Model):
     __tablename__='cktb'
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer)
@@ -224,12 +250,19 @@ class User(db.Model):
 class MyModelConverter(AdminModelConverter):
     pass
 
-class UserAdmin(sqla.ModelView):
+
+class MyInlineModelConverter(InlineModelConverter):
+    def post_process(self, form_class, info):
+        #form_class.regdate  = wtf.StringField('regdate') + 10000
+        form_class.regdate  =  10000
+        return form_class
+class CkAdmin(sqla.ModelView):
     #can_create = False
     #can_export = True
     #form_args = dict(regdate=((int)(time.time())))
     column_formatters = dict(regdate=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.regdate))
     model_form_converter = MyModelConverter
+    inline_model_form_converter = MyInlineModelConverter
     action_disallowed_list = ['delete', ]
     can_view_details = True
     column_display_pk = True
@@ -243,12 +276,86 @@ class UserAdmin(sqla.ModelView):
     ]
     column_default_sort = [('nickname', False), ('password', False)]  # sort on multiple columns
 
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                current_user.has_role('superuser')
+        )
 
-admin_bp = admin.Admin(name="CK控制台",index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
-admin_bp.add_view(AdminTaskView(name='Task',endpoint='task'))
+    def _handle_view(self, name, **kwargs):
+        """
+        Override builtin _handle_view in order to redirect users when a view is not accessible.
+        """
+        if not self.is_accessible():
+            if current_user.is_authenticated:
+                # permission denied
+                abort(403)
+            else:
+                # login
+                return redirect(url_for('security.login', next=request.url))
+
+admin_bp.add_view(CkAdmin(Cktb, db.session,name='CK', endpoint='ck'))
 
 
-admin_bp.add_view(UserAdmin(User, db.session))
+# Define models
+roles_users = db.Table(
+    'roles_users',
+    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+    db.Column('role_id', db.Integer(), db.ForeignKey('role.id'))
+)
+
+
+class Role(db.Model, RoleMixin):
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
+
+    def __str__(self):
+        return self.name
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(255))
+    last_name = db.Column(db.String(255))
+    email = db.Column(db.String(255), unique=True)
+    password = db.Column(db.String(255))
+    active = db.Column(db.Boolean())
+    confirmed_at = db.Column(db.DateTime())
+    roles = db.relationship('Role', secondary=roles_users,
+                            backref=db.backref('users', lazy='dynamic'))
+
+    def __str__(self):
+        return self.email
+
+
+# Setup Flask-Security
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+
+# Create customized model view class
+class MyModelView(sqla.ModelView):
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                current_user.has_role('superuser')
+        )
+
+    def _handle_view(self, name, **kwargs):
+        """
+        Override builtin _handle_view in order to redirect users when a view is not accessible.
+        """
+        if not self.is_accessible():
+            if current_user.is_authenticated:
+                # permission denied
+                abort(403)
+            else:
+                # login
+                return redirect(url_for('security.login', next=request.url))
+
+# Add model views
+admin_bp.add_view(MyModelView(Role, db.session))
+admin_bp.add_view(MyModelView(User, db.session))
+
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

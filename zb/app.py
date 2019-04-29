@@ -11,7 +11,10 @@ import json
 import socket
 
 from flask import Flask, request, jsonify, render_template, redirect,url_for, send_file, send_from_directory,session,escape
-
+import flask_admin as admin
+from flask_admin import helpers as admin_helpers
+from flask_security import Security, SQLAlchemyUserDatastore, \
+    UserMixin, RoleMixin, login_required, current_user
 import urllib
 import random,hashlib
 import chardet
@@ -24,6 +27,9 @@ from strapi     import strapi_bp
 from useradmin  import userAdmin_bp
 from stradmin   import admin_bp
 from stradmin   import admin_db_bp
+from stradmin   import user_datastore
+
+
 import libdb as libdb
 global logger
 global CONF
@@ -39,10 +45,27 @@ app.register_blueprint(strapi_bp,   url_prefix='/strapi')  #api接口
 #配置界面主题，可选参数：Cerulean  Cosmo  Cyborg Darkly Flatly Journal
 # Lumen Paper Readable Sandstone Simplex Slate Spacelab Superhero United Yeti
 app.config['FLASK_ADMIN_SWATCH'] = 'Yeti'
-admin_bp.init_app(app)
+
+
 admin_db_bp.init_app(app)
+security = Security(app, user_datastore)
+
+admin_bp.init_app(app)
 userAdmin_bp.init_app(app)
 
+
+
+""""""
+# define a context processor for merging flask-admin's template context into the
+# flask-security views.
+@security.context_processor
+def security_context_processor():
+    return dict(
+        admin_base_template=admin_bp.base_template,
+        admin_view=admin_bp.index_view,
+        h=admin_helpers,
+        get_url=url_for
+    )
 
 # set the secret key.  keep this really secret:
 app.secret_key = '\xe5\xcc\xc5\xd9+\xfbC\xc6\xdbD\x1af\xe0\xa6*\xeb$\xa7\xe4\xf6p~\x01\xaf'

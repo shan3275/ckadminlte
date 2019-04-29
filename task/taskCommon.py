@@ -214,6 +214,8 @@ def reset_records(userId):
         const = crack.listLRange(CONF['redis']['const'],0,-1)
         if len(const) == 0:
             logger.error('redist const list is null')
+            logger.info("%d records reset.", CNT)
+            return CNT
         rv = crack.listRPush(CONF['redis']['live'], *const)
         if rv <= 0:
             logger.error('write ck nickname to redis(%d) live list fail!!',userId)
