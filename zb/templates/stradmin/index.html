@@ -76,15 +76,8 @@
     </div>
 </div>
 
-
-{% block tail_js %}
-    {{ super() }}
+{% block tail %}
     <script src="{{ admin_static.url(filename='vendor/bootstrap-daterangepicker/daterangepicker.js', v='1.3.22') }}" type="text/javascript"></script>
-    {% if admin_view.extra_js %}
-      {% for js_url in admin_view.extra_js %}
-        <script src="{{ js_url }}" type="text/javascript"></script>
-      {% endfor %}
-    {% endif %}
     <script type="text/javascript">
         $(function() {
             var start = moment().subtract(29, 'days');

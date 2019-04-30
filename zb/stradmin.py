@@ -193,7 +193,7 @@ class MyHomeView(admin.AdminIndexView):
         return self.render("console.html", g_stat=g_stat, task_records=tasks)
 
 admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html',index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
-#admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html', template_mode='bootstrap3',url='/admin',endpoint='admin')
+#admin_bp = admin.Admin(name="CK控制台",index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
 
 
 # Create custom admin view
