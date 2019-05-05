@@ -76,8 +76,7 @@ g_records = []
 g_cnt = {}
 @app.route('/')
 def index():
-    return "Hello World"
-
+    return "hello world"
 
 if __name__ == '__main__':
     reload(sys)

@@ -658,6 +658,73 @@ def getTaskList():
     tasks_list.reverse()
     return tasks_list
 
+def writeTasktoDB(task):
+    """
+    将task写入数据库
+    :param task: 任务字典
+    :return:
+    """
+    key = "user_id, task_id, effective, reset_done, submit_time, begin_timestamp,total_time,"\
+          "last_time_from,last_time_to,time_gap,gap_num,user_num,req,ck_req,"\
+          "ck_url,room_url,content"
+    value = "'%s', '%s', '%s', '%s', '%s', '%s', '%s',"\
+            "'%s', '%s', '%s', '%s', '%s', '%s', '%s',"\
+            "'%s', '%s', '%s'" \
+            % (task['user_id'],       task['task_id'],        task['effective'],    task['reset_done'], \
+               task['submit_time'],   task['begin_timestamp'],task['total_time'],                       \
+               task['last_time_from'],task['last_time_to'],   task['time_gap'],     task['gap_num'],    \
+               task['user_num'],      task['req'],            task['ck_req'],                           \
+               task['ck_url'],        task['room_url'],       task['content'])
+    logger.debug('key:%s, value:%s', key, value)
+    rv = libdb.LibDB().insert_db(key, value, CONF['database']['tasktb'])
+
+def moveTaskFromRedistoDB():
+    """
+    将redis中的超过24小时的任务移动到mysql中
+    :return:
+    """
+    #任务存储在DB15中，故获取
+    start = 0
+    end   = int(time.time()-3600*24)
+
+    crack = libredis.LibRedis(15)
+    task_num = crack.zCount(CONF['redis']['begintask'], start, end)
+    logger.info('task_num=%d', task_num)
+    if task_num == 0:
+        logger.info('24小时之前任务数量为空')
+        return
+
+    tasks = crack.zRangeByScore(CONF['redis']['begintask'], start, end)
+    if len(tasks) == 0:
+        logger.info('24小时之前任务列表为空')
+        return
+
+    ##删除任务从集合中
+    begin_task_num = crack.zRmRangeByScore(CONF['redis']['begintask'], start, end)
+    logger.info('begin_task_num=%d', begin_task_num)
+    if task_num != begin_task_num:
+        logger.error('task_num != begin_task_num,异常，需要关注')
+
+    end_task_num = crack.zRmRangeByScore(CONF['redis']['endtask'], start, end)
+    logger.info('end_task_num=%d', end_task_num)
+    if task_num != end_task_num:
+        logger.error('task_num != end_task_num,异常，需要关注')
+
+    ##将任务从redis复制到数据库中
+
+    for task in tasks:
+        task_dict = crack.hashGetAll(task)
+        if task_dict == None:
+            logger.error('异常，在redis中找不到表项')
+            continue
+        ##将表项写入Db中
+        rv = writeTasktoDB(task_dict)
+        if rv == False:
+            logger.error('write task to DB Fail!')
+        rv = crack.hashDel(task, *task_dict.keys())
+        logger.info('clear task(%s) rv(%d)', task, rv)
+
+
 
 def updateTaskCKReq(taskID):
     if taskID != None:

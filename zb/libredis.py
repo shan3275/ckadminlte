@@ -300,6 +300,16 @@ class LibRedis():
         logger.info(list)
         return list
 
+    def zRmRangeByScore(self,name, min, max):
+        """
+        删除指定score区间的成员
+        :param name:
+        :param min:
+        :param max:
+        :return: 成功删除的个数,大于等于0
+        """
+        return self.redis.zremrangebyscore(name,min,max)
+
 logger = gl.get_logger()
 CONF   = gl.get_conf()
 
