@@ -143,9 +143,11 @@ class UserHomeView(admin.AdminIndexView):
                 logger.info(param)
                 if param.has_key('user'):
                     para_dict = dict(user=param['user'][0])
-                    logger.info(para_dict)
-                    url = urlAddPara(request.url, para_dict)
-                    return redirect(url)
+                else:
+                    para_dict = dict(user='0')
+                logger.info(para_dict)
+                url = urlAddPara(request.url, para_dict)
+                return redirect(url)
         # 获取表项数量
         stat = libredis.LibRedis(userId).hashGetAll('g_stat')
         tasks = libcommon.getUserTaskList(userId)
@@ -359,9 +361,12 @@ class UserTaskView(admin.BaseView):
                 logger.info(param)
                 if param.has_key('user'):
                     para_dict = dict(user=param['user'][0])
-                    logger.info(para_dict)
-                    url = urlAddPara(request.url, para_dict)
-                    return redirect(url)
+                else:
+                    para_dict = dict(user='0')
+                logger.info(para_dict)
+                url = urlAddPara(request.url, para_dict)
+                return redirect(url)
+
         tasks = libcommon.getUserTaskList(userId)
         if not tasks:
             task = dict()
