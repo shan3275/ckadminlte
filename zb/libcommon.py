@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 import libdb as libdb
 import libredis as libredis
 import chardet
+import urllib
 import time,datetime
 import globalvar as gl
 
@@ -220,6 +221,8 @@ def takeOutCksByTimeStampRange(timestampBegin, timestampEnd):
 
 def writeRecordsToRedis(records, userId):
     # 写入数据库
+    if len(records) ==0:
+        return
     crack = libredis.LibRedis(userId)
     for record in records:
         # cookie写入redis
@@ -239,7 +242,7 @@ def writeRecordsToRedis(records, userId):
                 logger.error('write ck nickname to redis const list fail!!')
 
     if CONF['random'] != True:
-        logger.info('write ck nickname to redis const list success, %d', rv)
+        logger.info('write ck nickname to redis const list success')
 
     # 将cknnsetconst 复制一份，作为获取ck时的中间变量。
     if CONF['random'] == True:
@@ -311,8 +314,26 @@ def cookie_csv_parse_for_redis(line):
     record['regtime']     = row[9]
     return record
 
+def cookie_txt_parse_for_redis(line):
+    if line == '':
+        return None
+    aa = line.split('acf_nickname=')
+    if len(aa) == 1:
+        nickname = 'nickname'
+    else:
+        bb = aa[1].split(';', 1)
+        cc = bb[0].encode('utf8')
+        nickname = urllib.unquote(cc)
+    # 名称,密码,Cookies
+    record  = {}
+    record['id']          = 0
+    record['nickname']    = nickname
+    record['password']    = 'password'
+    record['cookie']      = line
+    return record
+
 def cookie_load_for_redis(path):
-    FILE = open(path, 'rb')
+    FILE = open(path, 'rU')
     records =[]
     seq = 0
     timestr = time.strftime('%Y%m%d%H%M%S')
@@ -326,7 +347,8 @@ def cookie_load_for_redis(path):
             u8str = line
         else:
             u8str = line.decode('GBK').encode("utf8")
-        record = cookie_csv_parse_for_redis(u8str)
+        #record = cookie_csv_parse_for_redis(u8str)
+        record = cookie_txt_parse_for_redis(u8str)
         if record == None:
             continue
 
