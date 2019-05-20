@@ -333,7 +333,7 @@ def cookie_txt_parse_for_redis(line):
     return record
 
 def cookie_load_for_redis(path):
-    FILE = open(path, 'rU')
+    FILE = open(path, 'r')
     records =[]
     seq = 0
     timestr = time.strftime('%Y%m%d%H%M%S')
@@ -477,6 +477,7 @@ def reset_records(userId):
         const = crack.listLRange(CONF['redis']['const'],0,-1)
         if len(const) == 0:
             logger.error('redist const list is null')
+            return CNT
         rv = crack.listRPush(CONF['redis']['live'], *const)
         if rv <= 0:
             logger.error('write ck nickname to redis(%d) live list fail!!',userId)
