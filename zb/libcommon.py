@@ -695,13 +695,11 @@ def getOrder(order_id):
     record = libdb.LibDB().query_by_id(order_id, 'ordtb')
 
     logger.debug("order_id=%s, record=%s" %(order_id, record))
-    if record != False:
+    if record != False and record != None:
         order = parseOrder(record)
         return order
     else:
         return None
-
-    
 
 def getTaskList():
     tasks_list = list()

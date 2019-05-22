@@ -239,86 +239,6 @@ class AdminTaskView(admin.BaseView):
 
 admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task'))
 
-
-# Create custom admin view
-class CreateTaskView(admin.BaseView):
-    @admin.expose('/')
-    def index(self):
-        order_id = request.args.get('order_id')
-
-        logger.debug('order_id: %s', order_id)
-
-        if order_id == None:
-            order_id = 1
-
-        order = libcommon.getOrder(order_id)
-        
-        return self.render('admin/createtask.html',order=order)
-
-    @admin.expose('/submit_task', methods=['POST', 'GET'])
-    def submit_task(self):
-        global g_stat
-        if request.method == 'POST':
-            
-            order_id = request.form.get('order_id')
-            begin_time = request.form.get('begin_time')
-            task_time = request.form.get('task_time')
-            total_time = request.form.get('total_time')
-
-            
-            renqi_num = request.form.get('renqi_num')
-            last_time_from = request.form.get('last_time_from')
-            last_time_to = request.form.get('last_time_to')
-            time_gap = request.form.get('time_gap')
-            gap_num = request.form.get('gap_num')
-            userId = request.form.get('user_id')
-
-
-            logger.debug('begin_time: %s, total_time:%s' %(begin_time, total_time))
-            logger.debug('renqi_num: %s' %(renqi_num))
-            logger.debug('last_time_from:%s, last_time_to:%s' %(last_time_from, last_time_to))
-            logger.debug('time_gap:%s, gap_num:%s' %(time_gap, gap_num))
-
-            begin_time_s = begin_time.replace('T', ' ')
-            begin_timestamp = libcommon.strToTimestamp(begin_time_s)
-
-            room_url = request.form.get('room_url')
-            ck_url = request.form.get('ck_url')
-
-            order = libcommon.getOrder(order_id)
-            room_url = libcommon.room_url(order['platform'], order['room_id'])
-            ck_url = "http://127.0.0.1:8200/useradmin/cookie?user=%s" %(userId)
-
-            logger.debug('room_url: %s, ck_url: %s' %(room_url, ck_url))
-
-            req_renqi = int(renqi_num)
-
-            userId = int(userId)
-            alloced = libcommon.renqi_alloc(userId, req_renqi)
-
-            ck_num = libcommon.renqi_to_cookies(userId, req_renqi)
-            
-            logger.debug(' req_renqi %d, alloced %d, ck_num %d' %(req_renqi, alloced, ck_num))
-            
-
-            task_min = int(task_time)
-            total_min = int(total_time)
-            cur_min = 0
-            while cur_min < task_min:
-                cur_timestamp = begin_timestamp + (cur_min * 60)
-                cur_time_s =  time.localtime(cur_timestamp)
-                cur_time_f = time.strftime("%Y-%m-%dT%H:%M:%S",cur_time_s)
-                libcommon.writeTaskToRedis(userId, room_url, ck_url, cur_time_f, total_time, \
-                                       ck_num, last_time_from, last_time_to, time_gap, gap_num)
-                cur_min += total_min
-
-                logger.debug('task_min:%d, cur_min:%d, cur_time_s=%s' %(task_min, cur_min, cur_time_s))
-        return redirect(url_for('task.index'))
-
-    
-
-admin_bp.add_view(CreateTaskView(name='创建任务',endpoint='createtask'))
-
 # BufferView
 class BufferView(admin.BaseView):
     @admin.expose('/',  methods=['POST', 'GET'])
@@ -466,7 +386,7 @@ class SupplierModelConverter(AdminModelConverter):
 class SupplierAdmin(sqla.ModelView):
 
 
-    list_template = 'admin/supplier_list.html'
+    list_template = 'admin/supplier.html'
     model_form_converter = SupplierModelConverter
     action_disallowed_list = ['delete', ]
     can_view_details = True
@@ -562,7 +482,7 @@ class GroupForm(Form):
 class GroupAdmin(sqla.ModelView):
 
     form = GroupForm
-    list_template = 'admin/group_list.html'
+    list_template = 'admin/group.html'
     model_form_converter = GroupModelConverter
     action_disallowed_list = ['delete', ]
     can_view_details = True
@@ -672,7 +592,7 @@ class Orders(db.Model):
 class OrderAdmin(sqla.ModelView):
 
     form = OrderForm
-    list_template = 'admin/order_extra.html'
+    list_template = 'admin/orders.html'
     can_view_details = True
     column_display_pk = True
     edit_modal=True
@@ -710,7 +630,90 @@ class OrderAdmin(sqla.ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求',endpoint='orders'))
+admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求',endpoint='Orders'))
+
+# Create custom admin view
+class CreateTaskView(admin.BaseView):
+    @admin.expose('/')
+    def index(self):
+        order_id = request.args.get('order_id')
+
+        logger.debug('order_id: %s', order_id)
+
+        if order_id == None:
+            order_id = 1
+
+        order = libcommon.getOrder(order_id)
+
+        if order == None:
+            return redirect(url_for('Orders.index_view'))
+            #return self.render('admin/orders.html',order=order)
+        else:
+            return self.render('admin/createtask.html',order=order)
+
+    @admin.expose('/submit_task', methods=['POST', 'GET'])
+    def submit_task(self):
+        global g_stat
+        if request.method == 'POST':
+            
+            order_id = request.form.get('order_id')
+            begin_time = request.form.get('begin_time')
+            task_time = request.form.get('task_time')
+            total_time = request.form.get('total_time')
+
+            
+            renqi_num = request.form.get('renqi_num')
+            last_time_from = request.form.get('last_time_from')
+            last_time_to = request.form.get('last_time_to')
+            time_gap = request.form.get('time_gap')
+            gap_num = request.form.get('gap_num')
+            userId = request.form.get('user_id')
+
+
+            logger.debug('begin_time: %s, total_time:%s' %(begin_time, total_time))
+            logger.debug('renqi_num: %s' %(renqi_num))
+            logger.debug('last_time_from:%s, last_time_to:%s' %(last_time_from, last_time_to))
+            logger.debug('time_gap:%s, gap_num:%s' %(time_gap, gap_num))
+
+            begin_time_s = begin_time.replace('T', ' ')
+            begin_timestamp = libcommon.strToTimestamp(begin_time_s)
+
+            room_url = request.form.get('room_url')
+            ck_url = request.form.get('ck_url')
+
+            order = libcommon.getOrder(order_id)
+            room_url = libcommon.room_url(order['platform'], order['room_id'])
+            ck_url = "http://127.0.0.1:8200/useradmin/cookie?user=%s" %(userId)
+
+            logger.debug('room_url: %s, ck_url: %s' %(room_url, ck_url))
+
+            req_renqi = int(renqi_num)
+
+            userId = int(userId)
+            alloced = libcommon.renqi_alloc(userId, req_renqi)
+
+            ck_num = libcommon.renqi_to_cookies(userId, req_renqi)
+            
+            logger.debug(' req_renqi %d, alloced %d, ck_num %d' %(req_renqi, alloced, ck_num))
+            
+
+            task_min = int(task_time)
+            total_min = int(total_time)
+            cur_min = 0
+            while cur_min < task_min:
+                cur_timestamp = begin_timestamp + (cur_min * 60)
+                cur_time_s =  time.localtime(cur_timestamp)
+                cur_time_f = time.strftime("%Y-%m-%dT%H:%M:%S",cur_time_s)
+                libcommon.writeTaskToRedis(userId, room_url, ck_url, cur_time_f, total_time, \
+                                       ck_num, last_time_from, last_time_to, time_gap, gap_num)
+                cur_min += total_min
+
+                logger.debug('task_min:%d, cur_min:%d, cur_time_s=%s' %(task_min, cur_min, cur_time_s))
+        return redirect(url_for('task.index'))
+
+    
+
+admin_bp.add_view(CreateTaskView(name='创建任务',endpoint='createtask'))
 
 # Role
 # Define models
