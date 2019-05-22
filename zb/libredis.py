@@ -179,6 +179,17 @@ class LibRedis():
         rv = self.redis.hincrby(name,key,amount)
         return rv
 
+    def hashincrfloat(self,name,key,value):
+        """
+        hash 表中键值自加1或者指定数字
+        :param name:
+        :param key:
+        :param amount:
+        :return: 键值自加后的结果
+        """
+        rv = self.redis.hincrbyfloat(name,key, value)
+        return rv
+
     def hashHlen(self,name):
         """
         获取哈希表字段的数量

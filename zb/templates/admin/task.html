@@ -1,0 +1,47 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<div class="table-responsive-lg">
+    <table class="table table-striped table-dark">
+      <thead>
+        <tr>
+
+          <th scope="col">Action</th>
+          <th scope="col">ID.</th>
+          <th scope="col">状态</th>
+          <th scope="col">UserID</th>
+          <th scope="col">总时间</th>
+          <th scope="col">停留时间</th>
+          <th scope="col">需求数量</th>
+          <th scope="col">已投数量</th>
+          <th scope="col">ck请求数量</th>
+          <th scope="col">投放间隔</th>
+          <th scope="col">间隔次数</th>
+          <th scope="col">开始时间</th>
+          <th scope="col">房间</th>
+          <th scope="col">CK</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for record in task_records %}
+        <tr>
+          <th scope="row"><a href="/admin/task/del_task?user={{ record['user_id'] }}&task_id={{ record['task_id']  }}">删除</a></th>
+          
+          <td>{{ record['task_id'] }}</td>
+          <td>{{ record['status'] }}</td>
+          <td>{{ record['user_id'] }}</td>
+          <td>{{ record['total_time'] }}</td>
+          <td>{{ record['last_time_from'] }}---{{ record['last_time_to'] }}</td>
+          <td>{{ record['user_num'] }}</td>
+          <td>{{ record['req'] }}</td>
+          <td>{{ record['ck_req'] }}</td>
+          <td>{{ record['time_gap'] }}</td>
+          <td>{{ record['gap_num'] }}</td>
+          <td>{{ record['begin_time'] }}</td>
+          <td>{{ record['room_url'] }}</td>
+          <td>{{ record['ck_url'] }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+</div>
+{% endblock %}
