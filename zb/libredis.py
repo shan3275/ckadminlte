@@ -179,6 +179,16 @@ class LibRedis():
         rv = self.redis.hincrby(name,key,amount)
         return rv
 
+    def hashset(self,name, key, value):
+        """
+        Returns 1 if HSET created a new field, otherwise 0
+        :param name:
+        :param key:
+        :param value:
+        :return:Returns 1 if HSET created a new field, otherwise 0
+        """
+        return self.redis.hset(name,key,value)
+
     def hashHlen(self,name):
         """
         获取哈希表字段的数量
