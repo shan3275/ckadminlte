@@ -26,7 +26,7 @@ def now():
 DEF_PORT = 8888
 CUR_PORT = DEF_PORT
 DEF_FILE = "def.txt"
-g_stat = {"cycle":1, "pos":0,'take_out_cks':0, "total":0, "asigned":0, "req":0, "rereq":0, "none":0, "boot_ts": now(), "reset_ts":now()}
+g_stat = {"cycle":1, "pos":0,'take_out_cks':0,"total_renqi":0, "total":0, "asigned":0, "req":0, "rereq":0, "none":0, "boot_ts": now(), "reset_ts":now()}
 g_records = []
 g_cnt = {}
 
