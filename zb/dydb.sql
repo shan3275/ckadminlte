@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.10, for osx10.9 (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.24, for osx10.14 (x86_64)
 --
 -- Host: localhost    Database: dydb
 -- ------------------------------------------------------
--- Server version	5.7.10
+-- Server version	5.7.24
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,6 +14,137 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `cktb`
+--
+
+DROP TABLE IF EXISTS `cktb`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `cktb` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '用户id',
+  `uid` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '用户id',
+  `nickname` char(20) NOT NULL DEFAULT '' COMMENT '昵称',
+  `password` char(32) NOT NULL DEFAULT '' COMMENT '密码',
+  `grp` char(32) NOT NULL DEFAULT 'G0',
+  `ratio` float NOT NULL DEFAULT '1',
+  `regdate` int(10) unsigned NOT NULL COMMENT '注册时间',
+  `lastdate` int(11) NOT NULL DEFAULT '0' COMMENT '最后一次更新时间',
+  `colddate` int(11) NOT NULL DEFAULT '0' COMMENT '冷却时间',
+  `lastip` char(15) NOT NULL DEFAULT '' COMMENT '最后一次取用ip',
+  `usednum` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '取用次数',
+  `cookie` text NOT NULL COMMENT 'cookie',
+  `update_fail` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'cookie 更新失败次数',
+  `old` tinyint(1) DEFAULT '0' COMMENT '账号熟悉，1表示旧账号，0表示新账号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `nickname` (`nickname`) USING BTREE
+) ENGINE=MyISAM AUTO_INCREMENT=18556 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cktb`
+--
+
+LOCK TABLES `cktb` WRITE;
+/*!40000 ALTER TABLE `cktb` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cktb` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `custb`
+--
+
+DROP TABLE IF EXISTS `custb`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `custb` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `ctime` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `note` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `custb`
+--
+
+LOCK TABLES `custb` WRITE;
+/*!40000 ALTER TABLE `custb` DISABLE KEYS */;
+/*!40000 ALTER TABLE `custb` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grptb`
+--
+
+DROP TABLE IF EXISTS `grptb`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `grptb` (
+  `id` int(1) NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) NOT NULL,
+  `supplier` varchar(20) DEFAULT NULL,
+  `ltime` timestamp NULL DEFAULT NULL,
+  `ltask` int(11) DEFAULT NULL,
+  `ctime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `utime` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `ttime` timestamp NULL DEFAULT NULL,
+  `number` int(1) DEFAULT NULL,
+  `active` int(11) DEFAULT NULL,
+  `rratio` float DEFAULT NULL,
+  `cratio` float unsigned DEFAULT '1',
+  `rrenqi` int(11) DEFAULT NULL,
+  `crenqi` int(11) DEFAULT NULL,
+  `note` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grptb`
+--
+
+LOCK TABLES `grptb` WRITE;
+/*!40000 ALTER TABLE `grptb` DISABLE KEYS */;
+/*!40000 ALTER TABLE `grptb` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `ordtb`
+--
+
+DROP TABLE IF EXISTS `ordtb`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `ordtb` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `status` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `custom` varchar(255) DEFAULT NULL,
+  `platform` varchar(255) DEFAULT NULL,
+  `room_id` varchar(255) DEFAULT NULL,
+  `order_type` varchar(255) DEFAULT NULL,
+  `renqi` int(11) DEFAULT NULL,
+  `income` int(11) DEFAULT NULL,
+  `ctime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sdate` date DEFAULT NULL,
+  `edate` date DEFAULT NULL,
+  `note` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `ordtb`
+--
+
+LOCK TABLES `ordtb` WRITE;
+/*!40000 ALTER TABLE `ordtb` DISABLE KEYS */;
+/*!40000 ALTER TABLE `ordtb` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `role`
@@ -69,6 +200,32 @@ INSERT INTO `roles_users` VALUES (1,1),(1,2),(2,1);
 UNLOCK TABLES;
 
 --
+-- Table structure for table `suptb`
+--
+
+DROP TABLE IF EXISTS `suptb`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `suptb` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(20) NOT NULL,
+  `ctime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `note` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `suptb`
+--
+
+LOCK TABLES `suptb` WRITE;
+/*!40000 ALTER TABLE `suptb` DISABLE KEYS */;
+/*!40000 ALTER TABLE `suptb` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+=======
 -- Table structure for table `task`
 --
 
@@ -115,7 +272,7 @@ CREATE TABLE `user` (
   `confirmed_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -127,5 +284,57 @@ LOCK TABLES `user` WRITE;
 INSERT INTO `user` VALUES (1,'Admin',NULL,'admin','$pbkdf2-sha512$25000$LYUQQuhday1lDCGktNaasw$kVOLgqvN1C9RO2WPG8SDuzicJVxe/dYenMLVJLjitGHa2C87vAZxO5k4DN9hJxoS7Koa9ZUEhUrUlrlUYAG3Zw',1,NULL),(2,'Harry','Brown','harry.brown@example.com','$pbkdf2-sha512$25000$Z4wxRkjpfa/1ntNaC.F8bw$M0GWNVZTEn4RUhCSJFhw3lk96xlRD/ixtrApL6kd9/tMAUxL2UX58yhbjFhOUULq.XgbYSwyCAPP4XsnDGRrQA',1,NULL);
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `users` (
+  `userid` mediumint(8) unsigned NOT NULL AUTO_INCREMENT COMMENT '用户id',
+  `companyid` mediumint(9) NOT NULL DEFAULT '0' COMMENT '公司id',
+  `pid` mediumint(9) NOT NULL DEFAULT '0' COMMENT '父id',
+  `username` char(20) NOT NULL DEFAULT '' COMMENT '用户名',
+  `password` char(32) NOT NULL DEFAULT '' COMMENT '密码',
+  `nickname` char(20) NOT NULL DEFAULT '' COMMENT '昵称',
+  `regdate` int(10) unsigned NOT NULL COMMENT '注册时间',
+  `lastdate` int(11) NOT NULL DEFAULT '0' COMMENT '最后一次登录时间',
+  `regip` char(15) NOT NULL DEFAULT '' COMMENT '注册ip',
+  `lastip` char(15) NOT NULL DEFAULT '' COMMENT '最后一次登录ip',
+  `loginnum` smallint(5) unsigned NOT NULL DEFAULT '0' COMMENT '登录次数',
+  `email` char(32) NOT NULL DEFAULT '' COMMENT '邮箱',
+  `mobile` char(11) NOT NULL DEFAULT '' COMMENT '手机号码',
+  `islock` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否锁定',
+  `vip` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否会员',
+  `overduedate` int(11) NOT NULL DEFAULT '0' COMMENT '账户过期时间',
+  `status` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '状态-用于软删除',
+  PRIMARY KEY (`userid`),
+  UNIQUE KEY `username` (`username`),
+  KEY `email` (`email`) USING BTREE
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,0,0,'shan275','dc483e80a7a0bd9ef71d8cf973673924','欧耶山哥',1468038500,1473161010,'127.0.0.1','192.168.0.128',28,'shan275@163.com','15915492613',0,0,0,0),(2,0,0,'roy','dc483e80a7a0bd9ef71d8cf973673924','SuperRoy',1468038500,1473161010,'127.0.0.1','192.168.0.128',28,'shan275@163.com','15915492613',0,0,0,0);
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2019-05-23  3:15:12
 

@@ -19,9 +19,9 @@ global CONF
 def now():
     return time.strftime("%m-%d %H:%M:%S", time.localtime())
 
-def cookieWriteToDB(nickname, pwd, cookie):
-    key = "nickname, password, regdate, lastdate, colddate, cookie"
-    value = "'%s', '%s', '%d', '%d', '%d', '%s'" % (nickname, pwd, \
+def cookieWriteToDB(nickname, pwd, cookie, grp):
+    key = "nickname, password, grp, regdate, lastdate, colddate, cookie"
+    value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s'" % (nickname, pwd, grp, \
                                                     int(time.time()), int(time.time()), \
                                                     int(time.time()), cookie)
     logger.debug('key:%s, value:%s', key, value)
@@ -100,15 +100,15 @@ def cookie_load_for_db(path):
     logger.debug("%d cookies loaded from %s!" ,len(records), path)
     return records
 
-def writeFileToDB(file):
+def writeFileToDB(file, group='G0'):
     """
     将cooikes csv文件写入数据库
     :param file: cookie文件描述符
     :return:   ou  ：字典，包含信息
                ou['data']['num']  :成功数量
-               ou['msg']                :信息
-               ou['error']              : 0 ok
-                                        : 1 写数据库失败
+               ou['msg']            :信息
+               ou['error']           : 0 ok
+                                      : 1 写数据库失败
     """
     ou = dict(error=0, data=dict(), msg='ok')
     basepath = os.path.dirname(__file__)  # 当前文件所在路径
@@ -129,7 +129,7 @@ def writeFileToDB(file):
             ou['msg']   = '读数据库失败'
             continue
         if sql == None:
-            rv = cookieWriteToDB(record['nickname'], record['password'], record['cookie'])
+            rv = cookieWriteToDB(record['nickname'], record['password'], record['cookie'], group)
             if rv != True:
                 ou['error'] = 1
                 ou['msg']   = '写数据库失败'
@@ -154,6 +154,8 @@ def cookie_append(records):
         t['uptime']   = datetime.datetime.fromtimestamp(record[5])
         t['cookie']   = record[9]
         rcs.append(t)
+
+    return rcs
 
 def takeOutCksFromDB(cks_num):
     #先取出DB中表项数目
@@ -219,7 +221,13 @@ def takeOutCksByTimeStampRange(timestampBegin, timestampEnd):
         return False
     return records
 
+
+
 def writeRecordsToRedis(records, userId):
+
+    if records == None or len(records) == 0:
+        return
+
     # 写入数据库
     if len(records) ==0:
         return
@@ -243,6 +251,7 @@ def writeRecordsToRedis(records, userId):
 
     if CONF['random'] != True:
         logger.info('write ck nickname to redis const list success')
+
 
     # 将cknnsetconst 复制一份，作为获取ck时的中间变量。
     if CONF['random'] == True:
@@ -360,6 +369,9 @@ def cookie_load_for_redis(path):
     logger.debug("%d cookies loaded from %s!" ,len(records), path)
     return records
 
+
+
+
 def writeFileToRedis(file,userId):
     """
     将cooikes csv文件写入数据库
@@ -441,6 +453,7 @@ def get_record_from_redis(ip,userId):
 
 def gstat_clear(userId):
     stat = dict()
+    stat['total_renqi'] = 0
     stat['pos'] = 0
     stat['asigned'] = 0
     stat['req'] = 0
@@ -485,6 +498,8 @@ def reset_records(userId):
             logger.info('write ck nickname to redis(%d) live list success, %d', userId,rv)
 
     logger.info("%d records reset." ,CNT)
+
+    freeUserCK(userId)
     return CNT
 
 def clear_records(userId):
@@ -657,6 +672,58 @@ def getUserTaskList(userId):
             tasks_list.append(task_dict)
     tasks_list.reverse()
     return tasks_list
+
+def parseOrder(record):
+    order = dict()
+    order['id'] = record[0]
+    order['status'] = record[1]
+    order['name'] = record[2]
+    order['custom'] = record[3]
+    order['platform'] = record[4]  
+    order['room_id'] = record[5]
+    order['order_type'] = record[6]
+    order['renqi'] = record[7]
+    order['income'] = record[8]
+    order['ctime'] = record[9]
+    order['sdate'] = record[10]
+    order['edate'] = record[11]
+    order['note'] = record[12]
+
+    return order
+
+def room_url(platform, room_id):
+    room_url = ""
+    if platform == "douyu":
+        room_url = "https://www.douyu.com/%s" %(room_id)
+    elif platform == "huya":
+        room_url = "https://www.huya.com/%s" %(room_id)
+    elif platform == "egame":
+        room_url = "https://egame.qq.com/%s" %(room_id)
+    else:
+        room_url = "https://www.douyu.com/%s" %(room_id)
+
+    return room_url
+
+def getOrderList():
+    order_list = list()
+
+    records = libdb.LibDB().query('ordtb')
+
+    for record in records :
+        order = parseOrder(record)
+        order_list.append(order)
+
+    return order_list
+
+def getOrder(order_id):
+    record = libdb.LibDB().query_by_id(order_id, 'ordtb')
+
+    logger.debug("order_id=%s, record=%s" %(order_id, record))
+    if record != False and record != None:
+        order = parseOrder(record)
+        return order
+    else:
+        return None
 
 def getTaskList():
     tasks_list = list()
@@ -888,6 +955,126 @@ def getFileFromDBByIndex(index_begin, index_to):
 
     return file
 
+'''
+add some function by ben 2019-05-22
+'''
+def takeIdleCK():
+    records = libdb.LibDB().query_by_condition("uid=0", CONF['database']['table'])
+
+    if records == False:
+        return None
+
+    return records
+    #select sum(Value) from table1 where Name = 'AAA'
+
+def allocUserCK(ckid, uid):
+    return libdb.LibDB().update_db("uid=%d" %(uid), "id=%s" %(ckid), CONF['database']['table'])
+
+def freeUserCK(uid):
+    return libdb.LibDB().update_db("uid=0", "uid=%d" %(uid), CONF['database']['table'])
+
+def getUserCookieList(userId):
+   
+    cookie_list = list()
+    #任务存储在DB15中，故获取
+
+    crack = libredis.LibRedis(userId)
+
+    record_num = crack.listLLen(CONF['redis']['live'])
+
+    #logger.debug('!!!!!getUserCookieList: record_num=%d\n' %(record_num))
+    if record_num == 0:
+        return cookie_list
+
+    key_list = crack.listLRange(CONF['redis']['live'], 0, record_num-1)
+
+    #logger.debug('!!!!!getUserCookieList: record_list=%s' %(record_list))
+    for key in key_list:
+        cookie = crack.hashGetAll(key)
+        #logger.debug('!!!!!getUserCookieList: cookie=%s' %(cookie))
+
+        cookie_list.append(cookie)
+
+    return cookie_list
+
+def getUserStat(userId):
+     stat = libredis.LibRedis(userId).hashGetAll('g_stat')
+     return stat
+
+def total_renqi_get(userId):
+    stat = libredis.LibRedis(userId).hashGetAll('g_stat')
+    return float(stat['total_renqi'])
+
+def renqi_to_cookies(userId, renqi):
+    cookies = getUserCookieList(userId)
+
+    cur_ck = 0
+    cur_renqi = 0
+    logger.debug("renqi_to_cookies: userId=%d, renqi=%d, len(cookies)=%d" %(userId, renqi, len(cookies)))
+    for cookie in cookies:
+        cur_renqi += float(cookie['radio'])
+        cur_ck += 1
+        if cur_renqi > renqi:
+            break;
+
+    return cur_ck
+
+def add_renqi(total, userId):
+    """
+    根据人气需求，将cookie导入到redis缓存
+    :param total:  需求的人气数量
+    :param userId: 用户id
+    :return:
+    """
+
+    alloced = 0
+
+    crack = libredis.LibRedis(userId)
+
+    records = takeIdleCK()
+
+    if records == None:
+        return renqi_req
+
+    rcs = list()
+    for record in records:
+        t = dict()
+        t['id'] = record[0]
+        t['seq'] = record[0]
+        t['nickname'] = record[2]
+        t['password'] = record[3]
+        t['grp'] = record[4]
+        t['radio'] = record[5]
+        t['regtime']  = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(record[6])))
+        t['uptime']   = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(record[7])))
+        
+        t['cookie']   = record[11]
+
+        alloced += t['radio']
+
+        rcs.append(t)
+        logger.info(t)
+
+        allocUserCK(t['id'], userId)
+        crack.hashincrfloat('g_stat', 'total_renqi', t['radio'])
+        if alloced >= total:
+            break
+
+    logger.debug("alloced=%d, len(rcs)=%d" %(alloced, len(rcs)))
+    writeRecordsToRedis(rcs, userId)
+
+    return alloced
+
+def renqi_alloc(userId, req_renqi):
+    alloced = -1
+    total_renqi = total_renqi_get(userId)
+    balance = req_renqi - total_renqi
+
+    if balance > 0:
+        alloced = add_renqi(balance, userId)
+
+    logger.debug("renqi_alloc: total_renqi=%d, req_renqi=%d, balance=%d" %(total_renqi, req_renqi, balance))
+    return alloced
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

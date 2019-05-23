@@ -79,6 +79,18 @@ class LibDB():
 
         return sql_rows
 
+    def query(self,  db_table):
+        sql = "select * from %s" % (db_table)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            sql_rows = self.curg.fetchall()
+        except:
+            logger.exception('Insert operation error')
+            return False
+
+        return sql_rows
+
     def query_all(self, key, value, db_table):
         sql = "select * from %s where %s='%s'" % (db_table, key, value)
         logger.info("%s",sql)
@@ -114,6 +126,17 @@ class LibDB():
 
         return sql_rows
 
+    def query_by_id(self, id_str, db_table):
+        sql = "select * from %s where id=%s" %(db_table, id_str)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            info = self.curg.fetchone()
+        except:
+            logger.exception('Insert operation error')
+            return False
+        return info
+
     def query_one(self, key, value, db_table):
         sql = "select * from %s where %s='%s'" %(db_table, key, value)
         logger.info("%s",sql)
@@ -136,6 +159,8 @@ class LibDB():
             return False
         logger.debug(type(info))
         return info
+
+
     def insert_db(self, key, value, db_table):
         """
         插入一条表项
@@ -220,6 +245,29 @@ class LibDB():
             logger.exception('Insert operation error')
             return False
         return info
+
+    def min_key_of_condition(self, key, db_table, condition):
+        sql = "select min(%s) from %s where %s" %(key, db_table, condition)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            info = self.curg.fetchone()
+        except:
+            logger.exception('Insert operation error')
+            return False
+        return info
+
+    def max_key_condition(self, key, db_table, condition):
+        sql = "select max(%s) from %s where %s" %(key, db_table, condition)
+        logger.info("%s",sql)
+        try:
+            self.curg.execute(sql)
+            info = self.curg.fetchone()
+        except:
+            logger.exception('Insert operation error')
+            return False
+        return info
+        
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

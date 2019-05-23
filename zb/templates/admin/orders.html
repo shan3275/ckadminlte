@@ -1,0 +1,11 @@
+{% extends 'admin/model/list.html' %} 
+{% block body %} 
+    <!-- <h1>Cookie组</h1> -->
+    {{ super() }} 
+{% endblock %}
+
+{% block list_row_actions %} 
+    {{ super() }} 
+    &nbsp;
+    <a href="/admin/createtask/?order_id={{row['id']}}">启动</a>
+{% endblock %}
