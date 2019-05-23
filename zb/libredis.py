@@ -190,6 +190,16 @@ class LibRedis():
         rv = self.redis.hincrbyfloat(name,key, value)
         return rv
 
+    def hashset(self,name, key, value):
+        """
+        Returns 1 if HSET created a new field, otherwise 0
+        :param name:
+        :param key:
+        :param value:
+        :return:Returns 1 if HSET created a new field, otherwise 0
+        """
+        return self.redis.hset(name,key,value)
+
     def hashHlen(self,name):
         """
         获取哈希表字段的数量
@@ -310,6 +320,16 @@ class LibRedis():
         list = self.redis.zrange(name, min, max)
         logger.info(list)
         return list
+
+    def zRmRangeByScore(self,name, min, max):
+        """
+        删除指定score区间的成员
+        :param name:
+        :param min:
+        :param max:
+        :return: 成功删除的个数,大于等于0
+        """
+        return self.redis.zremrangebyscore(name,min,max)
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

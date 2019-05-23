@@ -44,7 +44,7 @@ app.register_blueprint(strapi_bp,   url_prefix='/strapi')  #api接口
 
 #配置界面主题，可选参数：Cerulean  Cosmo  Cyborg Darkly Flatly Journal
 # Lumen Paper Readable Sandstone Simplex Slate Spacelab Superhero United Yeti
-app.config['FLASK_ADMIN_SWATCH'] = 'Yeti'
+app.config['FLASK_ADMIN_SWATCH'] = 'yeti'
 
 
 admin_db_bp.init_app(app)
@@ -76,8 +76,7 @@ g_records = []
 g_cnt = {}
 @app.route('/')
 def index():
-    return "Hello World"
-
+    return "hello world"
 
 if __name__ == '__main__':
     reload(sys)

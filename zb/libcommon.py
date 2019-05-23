@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 import libdb as libdb
 import libredis as libredis
 import chardet
+import urllib
 import time,datetime
 import globalvar as gl
 
@@ -228,6 +229,8 @@ def writeRecordsToRedis(records, userId):
         return
 
     # 写入数据库
+    if len(records) ==0:
+        return
     crack = libredis.LibRedis(userId)
     for record in records:
         # cookie写入redis
@@ -247,7 +250,8 @@ def writeRecordsToRedis(records, userId):
                 logger.error('write ck nickname to redis const list fail!!')
 
     if CONF['random'] != True:
-        logger.info('write ck nickname to redis const list success' )
+        logger.info('write ck nickname to redis const list success')
+
 
     # 将cknnsetconst 复制一份，作为获取ck时的中间变量。
     if CONF['random'] == True:
@@ -319,8 +323,26 @@ def cookie_csv_parse_for_redis(line):
     record['regtime']     = row[9]
     return record
 
+def cookie_txt_parse_for_redis(line):
+    if line == '':
+        return None
+    aa = line.split('acf_nickname=')
+    if len(aa) == 1:
+        nickname = 'nickname'
+    else:
+        bb = aa[1].split(';', 1)
+        cc = bb[0].encode('utf8')
+        nickname = urllib.unquote(cc)
+    # 名称,密码,Cookies
+    record  = {}
+    record['id']          = 0
+    record['nickname']    = nickname
+    record['password']    = 'password'
+    record['cookie']      = line
+    return record
+
 def cookie_load_for_redis(path):
-    FILE = open(path, 'rb')
+    FILE = open(path, 'r')
     records =[]
     seq = 0
     timestr = time.strftime('%Y%m%d%H%M%S')
@@ -334,7 +356,8 @@ def cookie_load_for_redis(path):
             u8str = line
         else:
             u8str = line.decode('GBK').encode("utf8")
-        record = cookie_csv_parse_for_redis(u8str)
+        #record = cookie_csv_parse_for_redis(u8str)
+        record = cookie_txt_parse_for_redis(u8str)
         if record == None:
             continue
 
@@ -467,6 +490,7 @@ def reset_records(userId):
         const = crack.listLRange(CONF['redis']['const'],0,-1)
         if len(const) == 0:
             logger.error('redist const list is null')
+            return CNT
         rv = crack.listRPush(CONF['redis']['live'], *const)
         if rv <= 0:
             logger.error('write ck nickname to redis(%d) live list fail!!',userId)
@@ -723,6 +747,73 @@ def getTaskList():
         tasks_list.append(task_dict)
     tasks_list.reverse()
     return tasks_list
+
+def writeTasktoDB(task):
+    """
+    将task写入数据库
+    :param task: 任务字典
+    :return:
+    """
+    key = "user_id, task_id, effective, reset_done, submit_time, begin_timestamp,total_time,"\
+          "last_time_from,last_time_to,time_gap,gap_num,user_num,req,ck_req,"\
+          "ck_url,room_url,content"
+    value = "'%s', '%s', '%s', '%s', '%s', '%s', '%s',"\
+            "'%s', '%s', '%s', '%s', '%s', '%s', '%s',"\
+            "'%s', '%s', '%s'" \
+            % (task['user_id'],       task['task_id'],        task['effective'],    task['reset_done'], \
+               task['submit_time'],   task['begin_timestamp'],task['total_time'],                       \
+               task['last_time_from'],task['last_time_to'],   task['time_gap'],     task['gap_num'],    \
+               task['user_num'],      task['req'],            task['ck_req'],                           \
+               task['ck_url'],        task['room_url'],       task['content'])
+    logger.debug('key:%s, value:%s', key, value)
+    rv = libdb.LibDB().insert_db(key, value, CONF['database']['tasktb'])
+
+def moveTaskFromRedistoDB():
+    """
+    将redis中的超过24小时的任务移动到mysql中
+    :return:
+    """
+    #任务存储在DB15中，故获取
+    start = 0
+    end   = int(time.time()-3600*24)
+
+    crack = libredis.LibRedis(15)
+    task_num = crack.zCount(CONF['redis']['begintask'], start, end)
+    logger.info('task_num=%d', task_num)
+    if task_num == 0:
+        logger.info('24小时之前任务数量为空')
+        return
+
+    tasks = crack.zRangeByScore(CONF['redis']['begintask'], start, end)
+    if len(tasks) == 0:
+        logger.info('24小时之前任务列表为空')
+        return
+
+    ##删除任务从集合中
+    begin_task_num = crack.zRmRangeByScore(CONF['redis']['begintask'], start, end)
+    logger.info('begin_task_num=%d', begin_task_num)
+    if task_num != begin_task_num:
+        logger.error('task_num != begin_task_num,异常，需要关注')
+
+    end_task_num = crack.zRmRangeByScore(CONF['redis']['endtask'], start, end)
+    logger.info('end_task_num=%d', end_task_num)
+    if task_num != end_task_num:
+        logger.error('task_num != end_task_num,异常，需要关注')
+
+    ##将任务从redis复制到数据库中
+
+    for task in tasks:
+        task_dict = crack.hashGetAll(task)
+        if task_dict == None:
+            logger.error('异常，在redis中找不到表项')
+            continue
+        ##将表项写入Db中
+        rv = writeTasktoDB(task_dict)
+        if rv == False:
+            logger.error('write task to DB Fail!')
+        rv = crack.hashDel(task, *task_dict.keys())
+        logger.info('clear task(%s) rv(%d)', task, rv)
+
 
 
 def updateTaskCKReq(taskID):
