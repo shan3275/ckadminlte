@@ -4,7 +4,7 @@
 <div class="container">
     <div class="row">
          <div class="col-lg-4 col-xs-6">
-            <form class="form-inline" action="/admin/buffer/" enctype='multipart/form-data' method='POST'>
+            <form class="form-inline" action="/admin/redis-cookies/" enctype='multipart/form-data' method='POST'>
                 <div class="row">
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-primary btn-sm">查询</button>
@@ -37,7 +37,7 @@
         </div>
 
         <div class="col-lg-5 col-xs-6">
-            <form class="form-inline" action="/admin/buffer/alloc_renqi?user={{ user }}" enctype='multipart/form-data' method='POST'>
+            <form class="form-inline" action="/admin/redis-cookies/alloc_renqi?user={{ user }}" enctype='multipart/form-data' method='POST'>
                 <div class="row">
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-primary btn-sm">分配CK</button>
@@ -56,7 +56,7 @@
         </div>
 
         <div class="col-md-2">
-            <form action="/admin/buffer/buffer_clear?user={{ user }}" enctype='multipart/form-data' method='POST'>
+            <form action="/admin/redis-cookies/buffer_clear?user={{ user }}" enctype='multipart/form-data' method='POST'>
                 <div class="row">
                     <div class="col-md-3">
                         <button type="submit" class="btn btn-primary btn-sm">清空缓存</button>
