@@ -18,6 +18,7 @@ from flask_security.utils import encrypt_password
 import os,json
 from werkzeug.utils import secure_filename
 import chardet
+import time
 
 import datetime
 import urllib
@@ -26,11 +27,13 @@ import globalvar as gl
 import libdb as libdb
 import libcommon as libcommon
 
-from pub import *
+#from pub import *
 
 global logger
 global CONF
 
+def now():
+    return time.strftime("%m-%d %H:%M:%S", time.localtime())
 g_stat = {"cycle":1, "pos":0,'could_use':0, "total":0, "asigned":0, "req":0, "rereq":0, "none":0, "boot_ts": now(), "reset_ts":now()}
 g_records = []
 
@@ -95,7 +98,7 @@ class MyHomeView(admin.AdminIndexView):
         else:
             Digit = '0'
         g_stat['could_use'] = Digit
-        return self.render('admin/index.html',  g_stat=g_stat)
+        return self.render('stradmin/index.html',  g_stat=g_stat)
 
     @admin.expose('/download', methods=['POST'])
     def download(self):
@@ -198,7 +201,7 @@ admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html',index_v
 
 
 # Create custom admin view
-class AdminRedisTaskView(admin.BaseView):
+class AdminTaskView(admin.BaseView):
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
@@ -237,7 +240,9 @@ class AdminRedisTaskView(admin.BaseView):
 
         return redirect(url_for('task.index'))
 
-admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task'))
+#admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task'))
+admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='redis-task',category='Task'))
+
 
 # BufferView
 class BufferView(admin.BaseView):
@@ -297,7 +302,6 @@ class BufferView(admin.BaseView):
         return "move success!"
 
 admin_bp.add_view(BufferView(name='缓存',endpoint='buffer'))
-admin_bp.add_view(AdminRedisTaskView(name='Redis-Task',endpoint='redis-task',category='Task'))
 
 admin_db_bp = SQLAlchemy()
 db = admin_db_bp
@@ -395,7 +399,7 @@ class Cookie(db.Model):
     def __repr__(self):
         return "{}: {}".format(self.id, self.__str__())
 
-class CkAdmin(sqla.ModelView):
+class CookieAdmin(sqla.ModelView):
     #can_create = False
     #can_export = True
     #form_args = dict(regdate=((int)(time.time())))
@@ -456,8 +460,6 @@ class SupplierModelConverter(AdminModelConverter):
     pass
 
 class SupplierAdmin(sqla.ModelView):
-
-
     list_template = 'admin/supplier.html'
     model_form_converter = SupplierModelConverter
     action_disallowed_list = ['delete', ]
@@ -504,7 +506,6 @@ class GroupModelConverter(AdminModelConverter):
     pass
 
 class GroupForm(Form):
-
     def sup_query_factory():
         return [r.name for r in db.session.query(Supplier).all()]
 
