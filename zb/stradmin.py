@@ -194,11 +194,11 @@ class MyHomeView(admin.AdminIndexView):
         return self.render("console.html", g_stat=g_stat, task_records=tasks)
 
 admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html',index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
-#admin_bp = admin.Admin(name="CK控制台",base_template='my_master.html', template_mode='bootstrap3',url='/admin',endpoint='admin')
+#admin_bp = admin.Admin(name="CK控制台",index_view=MyHomeView(url='/admin',endpoint='admin'),template_mode='bootstrap3')
 
 
 # Create custom admin view
-class AdminTaskView(admin.BaseView):
+class AdminRedisTaskView(admin.BaseView):
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
@@ -289,11 +289,95 @@ class BufferView(admin.BaseView):
             alloced = libcommon.renqi_alloc(userId, total)
 
         return redirect(url_for('buffer.index', user=userId))
+      
+    @admin.expose('/move/', methods=('GET', 'POST'))
+    def move_view(self):
+        # render your view here
+        libcommon.moveTaskFromRedistoDB()
+        return "move success!"
 
 admin_bp.add_view(BufferView(name='缓存',endpoint='buffer'))
+admin_bp.add_view(AdminRedisTaskView(name='Redis-Task',endpoint='redis-task',category='Task'))
 
 admin_db_bp = SQLAlchemy()
 db = admin_db_bp
+
+
+# Create models
+class Tasktb(db.Model):
+    __tablename__='task'
+    id              = db.Column(db.Integer, primary_key=True)
+    task_id         = db.Column(db.String(32))
+    effective       = db.Column(db.Integer)
+    user_id         = db.Column(db.Integer)
+    reset_done      = db.Column(db.Integer)
+    submit_time     = db.Column(db.String(32))
+    begin_timestamp = db.Column(db.Integer)
+    total_time      = db.Column(db.Integer)
+    last_time_from  = db.Column(db.Integer)
+    last_time_to    = db.Column(db.Integer)
+    time_gap        = db.Column(db.Integer)
+    gap_num         = db.Column(db.Integer)
+    user_num        = db.Column(db.Integer)
+    req             = db.Column(db.Integer)
+    ck_req          = db.Column(db.Integer)
+    ck_url          = db.Column(db.String(128))
+    room_url        = db.Column(db.String(128))
+
+    def __str__(self):
+        return "{}, {}".format(self.nickname, self.password)
+
+    def __repr__(self):
+        return "{}: {}".format(self.id, self.__str__())
+
+
+class AdminDbTaskView(sqla.ModelView):
+    can_create = False
+    action_disallowed_list = ['delete', ]
+    #form_args = dict(regdate=((int)(time.time())))
+    column_formatters = dict(begin_timestamp=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.begin_timestamp))
+    can_view_details = True
+    column_display_pk = True
+    column_list = [
+        'id',
+        'task_id',
+        'effective',
+        'user_id',
+        'reset_done',
+        'submit_time',
+        'begin_timestamp',
+        'total_time',
+        'last_time_from',
+        'last_time_to',
+        'time_gap',
+        'gap_num',
+        'user_num',
+        'req',
+        'ck_req',
+        'ck_url',
+        'room_url',
+    ]
+
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                current_user.has_role('superuser')
+        )
+
+    def _handle_view(self, name, **kwargs):
+        """
+        Override builtin _handle_view in order to redirect users when a view is not accessible.
+        """
+        if not self.is_accessible():
+            if current_user.is_authenticated:
+                # permission denied
+                abort(403)
+            else:
+                # login
+                return redirect(url_for('security.login', next=request.url))
+
+admin_bp.add_view(AdminDbTaskView(Tasktb, db.session, name='Db-Task',endpoint='db-task',category='Task'))
+
 # Create models
 class Cookie(db.Model):
     __tablename__='cktb'
@@ -311,23 +395,11 @@ class Cookie(db.Model):
     def __repr__(self):
         return "{}: {}".format(self.id, self.__str__())
 
-
-class CookieModelConverter(AdminModelConverter):
-    pass
-
-class CookieInlineModelConverter(InlineModelConverter):
-    def post_process(self, form_class, info):
-        #form_class.regdate  = wtf.StringField('regdate') + 10000
-        form_class.regdate  =  10000
-        return form_class
-
-class CookieAdmin(sqla.ModelView):
+class CkAdmin(sqla.ModelView):
     #can_create = False
     #can_export = True
     #form_args = dict(regdate=((int)(time.time())))
     column_formatters = dict(regdate=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.regdate))
-    model_form_converter = CookieModelConverter
-    inline_model_form_converter = CookieInlineModelConverter
     action_disallowed_list = ['delete', ]
     can_view_details = True
     column_display_pk = True

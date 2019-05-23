@@ -195,7 +195,7 @@ CREATE TABLE `roles_users` (
 
 LOCK TABLES `roles_users` WRITE;
 /*!40000 ALTER TABLE `roles_users` DISABLE KEYS */;
-INSERT INTO `roles_users` VALUES (1,1),(1,2),(2,1),(3,1),(4,1),(5,1);
+INSERT INTO `roles_users` VALUES (1,1),(1,2),(2,1);
 /*!40000 ALTER TABLE `roles_users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -225,6 +225,37 @@ LOCK TABLES `suptb` WRITE;
 UNLOCK TABLES;
 
 --
+=======
+-- Table structure for table `task`
+--
+
+DROP TABLE IF EXISTS `task`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `task` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `user_id` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '用户id',
+  `task_id` char(32) NOT NULL DEFAULT '' COMMENT '任务ID',
+  `effective` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '任务有效的标志位，0表示无效，1表示有效',
+  `reset_done` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '任务开始前，重置ck标志位',
+  `submit_time` char(32) NOT NULL DEFAULT '' COMMENT '任务提交时间',
+  `begin_timestamp` int(10) unsigned NOT NULL COMMENT '任务开始的时间戳',
+  `total_time` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '任务总时间，单位为分钟',
+  `last_time_from` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '任务持续开始时间，单位为分钟',
+  `last_time_to` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '任务持续结束时间，单位为分钟',
+  `time_gap` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '放量时间间隔，单位为秒',
+  `gap_num` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT '放量间隔次数',
+  `user_num` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '需求终端用户数量',
+  `req` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '已经请求任务的终端用户数量',
+  `ck_req` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '已经请求的ck的终端用户数量',
+  `ck_url` char(128) NOT NULL DEFAULT '' COMMENT '获取ck的url链接',
+  `room_url` char(128) NOT NULL DEFAULT '' COMMENT '房间url链接',
+  `content` char(255) NOT NULL DEFAULT '' COMMENT '组装返回给终端的任务内容',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `user`
 --
 
@@ -250,7 +281,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'Admin',NULL,'admin','$pbkdf2-sha512$25000$LYUQQuhday1lDCGktNaasw$kVOLgqvN1C9RO2WPG8SDuzicJVxe/dYenMLVJLjitGHa2C87vAZxO5k4DN9hJxoS7Koa9ZUEhUrUlrlUYAG3Zw',1,NULL),(2,'Harry','Brown','harry.brown@example.com','$pbkdf2-sha512$25000$SimFMKbUuvee07oXwhijlA$jGbFRDrtCbBOnJDa/FN8.MduGgDU3HQ95yp8WmDlM10zACg0Mh3QdLakJaaxrI88/UHCBILv7KsVSybknIRz7Q',1,NULL),(3,'Amelia','Smith','amelia.smith@example.com','$pbkdf2-sha512$25000$xLgXQgiBUKpVSqm1lnLuHQ$YzOXCD3PkRYDvl4.XwohJaxhyeprZgD0l9PqcJVvGnVnkNW/RwexM1NYnBkjkFFQjaQRWfFj8zrewXqTLRgZLA',1,NULL),(4,'Oliver','Patel','oliver.patel@example.com','$pbkdf2-sha512$25000$Oedc650TQmitlTKmdE4pRQ$rXACrEFXDclBOs1CiHo6tvzzRbXa31lNsKddqIqspOGW/DtG1eF8c5uS/BFyJt5.t.kG7qNv97Sa6S7lejvzVg',1,NULL),(5,'Jack','Jones','jack.jones@example.com','$pbkdf2-sha512$25000$kXJOKQXAeA.BkNLaW.v9fw$PStZBVwZW9bYdoZpl16w2TMinKP/IMAJ0d/3hKDSRGZrKQv6PnyOnPEC44mjDCHMqrBinsJYqSMXMJlhe/iyNA',1,NULL);
+INSERT INTO `user` VALUES (1,'Admin',NULL,'admin','$pbkdf2-sha512$25000$LYUQQuhday1lDCGktNaasw$kVOLgqvN1C9RO2WPG8SDuzicJVxe/dYenMLVJLjitGHa2C87vAZxO5k4DN9hJxoS7Koa9ZUEhUrUlrlUYAG3Zw',1,NULL),(2,'Harry','Brown','harry.brown@example.com','$pbkdf2-sha512$25000$Z4wxRkjpfa/1ntNaC.F8bw$M0GWNVZTEn4RUhCSJFhw3lk96xlRD/ixtrApL6kd9/tMAUxL2UX58yhbjFhOUULq.XgbYSwyCAPP4XsnDGRrQA',1,NULL);
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -296,6 +327,7 @@ INSERT INTO `users` VALUES (1,0,0,'shan275','dc483e80a7a0bd9ef71d8cf973673924','
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
@@ -305,3 +337,4 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2019-05-23  3:15:12
+
