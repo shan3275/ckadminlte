@@ -25,6 +25,7 @@ import random
 import globalvar as gl
 import libdb as libdb
 import libcommon as libcommon
+import time
 
 
 global logger
@@ -234,9 +235,10 @@ class AdminRedisTaskView(admin.BaseView):
         if taskIdStr != None:
             libcommon.delTaskFromRedis(userId, taskIdStr)
 
-        return redirect(url_for('task.index'))
+        return redirect(url_for('redis-task.index'))
 
-admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task'))
+#admin_bp.add_view(AdminRedisTaskView(name='任务列表',endpoint='task'))
+admin_bp.add_view(AdminRedisTaskView(name='缓存任务',endpoint='redis-task',category='任务'))
 
 # BufferView
 class BufferView(admin.BaseView):
@@ -269,7 +271,7 @@ class BufferView(admin.BaseView):
             # default 0
             userId = 0
         CNT = libcommon.clear_records(userId)
-        return redirect(url_for('buffer.index', user=userId))
+        return redirect(url_for('redis-cookies.index', user=userId))
     
     @admin.expose('/alloc_renqi',methods=('GET', 'POST'))
     def alloc_renqi(self):
@@ -287,7 +289,7 @@ class BufferView(admin.BaseView):
             total = float(renqi_req)
             alloced = libcommon.renqi_alloc(userId, total)
 
-        return redirect(url_for('buffer.index', user=userId))
+        return redirect(url_for('redis-cookies.index', user=userId))
       
     @admin.expose('/move/', methods=('GET', 'POST'))
     def move_view(self):
@@ -295,8 +297,8 @@ class BufferView(admin.BaseView):
         libcommon.moveTaskFromRedistoDB()
         return "move success!"
 
-admin_bp.add_view(BufferView(name='缓存',endpoint='buffer'))
-admin_bp.add_view(AdminRedisTaskView(name='Redis-Task',endpoint='redis-task',category='Task'))
+admin_bp.add_view(BufferView(name='缓存Cookie',endpoint='redis-cookies',category='Cookies'))
+
 
 admin_db_bp = SQLAlchemy()
 db = admin_db_bp
@@ -375,7 +377,7 @@ class AdminDbTaskView(sqla.ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-admin_bp.add_view(AdminDbTaskView(Tasktb, db.session, name='Db-Task',endpoint='db-task',category='Task'))
+admin_bp.add_view(AdminDbTaskView(Tasktb, db.session, name='固化任务',endpoint='db-task',category='任务'))
 
 # Create models
 class Cookie(db.Model):
@@ -394,7 +396,7 @@ class Cookie(db.Model):
     def __repr__(self):
         return "{}: {}".format(self.id, self.__str__())
 
-class CkAdmin(sqla.ModelView):
+class CookieAdmin(sqla.ModelView):
     #can_create = False
     #can_export = True
     #form_args = dict(regdate=((int)(time.time())))
@@ -433,7 +435,7 @@ class CkAdmin(sqla.ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-admin_bp.add_view(CookieAdmin(Cookie, db.session,name='Cookie列表', endpoint='Cookie'))
+admin_bp.add_view(CookieAdmin(Cookie, db.session,name='固化Cookie', endpoint='db-cookies',category='Cookies'))
 
 #supplier models
 
@@ -470,7 +472,7 @@ class SupplierAdmin(sqla.ModelView):
         'note',
     ]
     column_default_sort = [('id', False)]  # sort by field id
-admin_bp.add_view(SupplierAdmin(Supplier,  db.session,name='供应商', endpoint='Supplier'))
+admin_bp.add_view(SupplierAdmin(Supplier,  db.session,name='Cookie供应商', endpoint='Supplier', category='Cookies'))
 
 #Group models
 from wtforms import IntegerField, FloatField, StringField, SelectField, DateField, DateTimeField, FileField, TextAreaField, form, Form
@@ -576,7 +578,7 @@ class GroupAdmin(sqla.ModelView):
     ]
     #column_default_sort = [('nickname', False), ('password', False)]  # sort on multiple columns
     column_default_sort = [('id', False)]  # sort by field id
-admin_bp.add_view(GroupAdmin(Group,  db.session,name='账号组', endpoint='Group'))
+admin_bp.add_view(GroupAdmin(Group,  db.session,name='Cookie组', endpoint='Group', category='Cookies'))
 
 # Custom
 class Custom(db.Model):
@@ -609,7 +611,7 @@ class CustomAdmin(sqla.ModelView):
         'note',
     ]
     column_default_sort = [('id', False)]  # sort by field id
-admin_bp.add_view(CustomAdmin(Custom,  db.session,name='客户', endpoint='Custom'))
+admin_bp.add_view(CustomAdmin(Custom,  db.session,name='客户', endpoint='Custom',category='需求'))
 
 # Orders
 
@@ -701,7 +703,7 @@ class OrderAdmin(sqla.ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求',endpoint='Orders'))
+admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求列表',endpoint='Orders',category='需求'))
 
 # Create custom admin view
 class CreateTaskView(admin.BaseView):
@@ -780,11 +782,11 @@ class CreateTaskView(admin.BaseView):
                 cur_min += total_min
 
                 logger.debug('task_min:%d, cur_min:%d, cur_time_s=%s' %(task_min, cur_min, cur_time_s))
-        return redirect(url_for('task.index'))
+        return redirect(url_for('redis-task.index'))
 
     
 
-admin_bp.add_view(CreateTaskView(name='创建任务',endpoint='createtask'))
+admin_bp.add_view(CreateTaskView(name='创建任务',endpoint='createtask',category='任务' ))
 
 # Role
 # Define models
