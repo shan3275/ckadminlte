@@ -39,7 +39,7 @@ CREATE TABLE `cktb` (
   `old` tinyint(1) DEFAULT '0' COMMENT '账号熟悉，1表示旧账号，0表示新账号',
   PRIMARY KEY (`id`),
   UNIQUE KEY `nickname` (`nickname`) USING BTREE
-) ENGINE=MyISAM AUTO_INCREMENT=18556 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

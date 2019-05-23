@@ -1034,7 +1034,7 @@ def add_renqi(total, userId):
     records = takeIdleCK()
 
     if records == None:
-        return renqi_req
+        return alloced
 
     rcs = list()
     for record in records:

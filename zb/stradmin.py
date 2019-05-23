@@ -202,7 +202,7 @@ class AdminTaskView(admin.BaseView):
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
-                current_user.has_role('superuser')
+                (current_user.has_role('superuser') or current_user.has_role('user'))
         )
 
     def _handle_view(self, name, **kwargs):
@@ -235,69 +235,10 @@ class AdminTaskView(admin.BaseView):
         if taskIdStr != None:
             libcommon.delTaskFromRedis(userId, taskIdStr)
 
-        return redirect(url_for('redis-task.index'))
+        return redirect(url_for('task.index'))
 
 #admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task'))
 admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task',category='任务'))
-
-# BufferView
-class BufferView(admin.BaseView):
-    @admin.expose('/',  methods=['POST', 'GET'])
-    def index(self):
-        if request.method == 'POST':
-            userIdStr = request.form.get('user_id')
-        else:
-            userIdStr = request.args.get('user')
-
-        if userIdStr != None:
-            userId = int(userIdStr)
-        else:
-            # default 0
-            userId = 0
-
-        # 获取表项数量
-       
-        stat = libcommon.getUserStat(userId)
-        cookies = libcommon.getUserCookieList(userId)
-        total_renqi = libcommon.total_renqi_get(userId)
-        return self.render('/admin/buffer.html',  g_stat=stat,user=userId, cookie_records=cookies, total_renqi=total_renqi)
-
-    @admin.expose('/buffer_clear', methods=['POST', 'GET'])
-    def buffer_clear(self):
-        userIdStr = request.args.get('user')
-        if userIdStr != None:
-            userId = int(userIdStr)
-        else:
-            # default 0
-            userId = 0
-        CNT = libcommon.clear_records(userId)
-        return redirect(url_for('redis-cookies.index', user=userId))
-    
-    @admin.expose('/alloc_renqi',methods=('GET', 'POST'))
-    def alloc_renqi(self):
-        global g_stat
-        if request.method == 'POST':
-            renqi_req = request.form.get('renqi_req')
-            userIdStr = request.args.get('user')
-            if userIdStr != None:
-                userId = int(userIdStr)
-            else:
-                # default 0
-                userId = 0
-            logger.debug('alloc_cookie renqi_req: %s',  renqi_req)
-            
-            total = float(renqi_req)
-            alloced = libcommon.renqi_alloc(userId, total)
-
-        return redirect(url_for('redis-cookies.index', user=userId))
-      
-    @admin.expose('/move/', methods=('GET', 'POST'))
-    def move_view(self):
-        # render your view here
-        libcommon.moveTaskFromRedistoDB()
-        return "move success!"
-      
-admin_bp.add_view(BufferView(name='缓存Cookie',endpoint='redis-cookies',category='Cookies'))
 
 admin_db_bp = SQLAlchemy()
 db = admin_db_bp
@@ -360,7 +301,7 @@ class AdminDbTaskView(sqla.ModelView):
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
-                current_user.has_role('superuser')
+                (current_user.has_role('superuser') or current_user.has_role('user'))
         )
 
     def _handle_view(self, name, **kwargs):
@@ -376,6 +317,67 @@ class AdminDbTaskView(sqla.ModelView):
                 return redirect(url_for('security.login', next=request.url))
 
 admin_bp.add_view(AdminDbTaskView(Tasktb, db.session, name='固化任务',endpoint='db-task',category='任务'))
+
+# BufferView
+class BufferView(admin.BaseView):
+    @admin.expose('/',  methods=['POST', 'GET'])
+    def index(self):
+        if request.method == 'POST':
+            userIdStr = request.form.get('user_id')
+        else:
+            userIdStr = request.args.get('user')
+
+        if userIdStr != None:
+            userId = int(userIdStr)
+        else:
+            # default 0
+            userId = 0
+
+        # 获取表项数量
+       
+        stat = libcommon.getUserStat(userId)
+        cookies = libcommon.getUserCookieList(userId)
+        total_renqi = libcommon.total_renqi_get(userId)
+        return self.render('/admin/buffer.html',  g_stat=stat,user=userId, cookie_records=cookies, total_renqi=total_renqi)
+
+    @admin.expose('/buffer_clear', methods=['POST', 'GET'])
+    def buffer_clear(self):
+        userIdStr = request.args.get('user')
+        if userIdStr != None:
+            userId = int(userIdStr)
+        else:
+            # default 0
+            userId = 0
+        CNT = libcommon.clear_records(userId)
+        return redirect(url_for('redis-cookies.index', user=userId))
+    
+    @admin.expose('/alloc_renqi',methods=('GET', 'POST'))
+    def alloc_renqi(self):
+        global g_stat
+        if request.method == 'POST':
+            renqi_req = request.form.get('renqi_req')
+            userIdStr = request.args.get('user')
+            if userIdStr != None:
+                userId = int(userIdStr)
+            else:
+                # default 0
+                userId = 0
+            logger.debug('alloc_cookie renqi_req: %s',  renqi_req)
+            
+            total = float(renqi_req)
+            alloced = libcommon.renqi_alloc(userId, total)
+
+        return redirect(url_for('redis-cookies.index', user=userId))
+      
+    @admin.expose('/move/', methods=('GET', 'POST'))
+    def move_view(self):
+        # render your view here
+        libcommon.moveTaskFromRedistoDB()
+        return "move success!"
+      
+admin_bp.add_view(BufferView(name='缓存Cookie',endpoint='redis-cookies',category='Cookies'))
+
+
 
 # Create models
 class Cookie(db.Model):
@@ -683,7 +685,7 @@ class OrderAdmin(sqla.ModelView):
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
-                current_user.has_role('superuser')
+                (current_user.has_role('superuser') or current_user.has_role('user'))
         )
 
     def _handle_view(self, name, **kwargs):
@@ -702,6 +704,12 @@ admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求列表',endpoint='Or
 
 # Create custom admin view
 class CreateTaskView(admin.BaseView):
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
     @admin.expose('/')
     def index(self):
         order_id = request.args.get('order_id')
@@ -777,7 +785,7 @@ class CreateTaskView(admin.BaseView):
                 cur_min += total_min
 
                 logger.debug('task_min:%d, cur_min:%d, cur_time_s=%s' %(task_min, cur_min, cur_time_s))
-        return redirect(url_for('redis-task.index'))
+        return redirect(url_for('task.index'))
 
     
 
@@ -842,9 +850,9 @@ class MyModelView(sqla.ModelView):
 # Add model views
 admin_bp.add_view(MyModelView(Role, db.session))
 admin_bp.add_view(MyModelView(User, db.session))
-from redis import Redis
-from flask_admin.contrib import rediscli
-admin_bp.add_view(rediscli.RedisCli(Redis()))
+#from redis import Redis
+#from flask_admin.contrib import rediscli
+#admin_bp.add_view(rediscli.RedisCli(Redis()))
 
 
 logger = gl.get_logger()
