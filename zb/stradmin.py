@@ -26,12 +26,11 @@ import globalvar as gl
 import libdb as libdb
 import libcommon as libcommon
 
-from pub import *
 
 global logger
 global CONF
 
-g_stat = {"cycle":1, "pos":0,'could_use':0, "total":0, "asigned":0, "req":0, "rereq":0, "none":0, "boot_ts": now(), "reset_ts":now()}
+g_stat = {"cycle":1, "pos":0,'could_use':0, "total":0, "asigned":0, "req":0, "rereq":0, "none":0, "boot_ts": libcommon.now(), "reset_ts":libcommon.now()}
 g_records = []
 
 
@@ -49,7 +48,7 @@ def cookie_append(records):
         t['ip']   = record[7]
         t['usednum']  = record[8]
         t['cookie']   = record[9]
-        t['cts']      = now()
+        t['cts']      = libcommon.now()
         t['ftc']      = ''
         t['loc']      = ''
         t['cnt']      = 0
