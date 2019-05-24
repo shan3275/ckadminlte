@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.24, for osx10.14 (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.10, for osx10.9 (x86_64)
 --
 -- Host: localhost    Database: dydb
 -- ------------------------------------------------------
--- Server version	5.7.24
+-- Server version	5.7.10
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -39,7 +39,7 @@ CREATE TABLE `cktb` (
   `old` tinyint(1) DEFAULT '0' COMMENT '账号熟悉，1表示旧账号，0表示新账号',
   PRIMARY KEY (`id`),
   UNIQUE KEY `nickname` (`nickname`) USING BTREE
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM AUTO_INCREMENT=10726 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -64,7 +64,7 @@ CREATE TABLE `custb` (
   `ctime` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `note` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -73,6 +73,7 @@ CREATE TABLE `custb` (
 
 LOCK TABLES `custb` WRITE;
 /*!40000 ALTER TABLE `custb` DISABLE KEYS */;
+INSERT INTO `custb` VALUES (2,'小哥','2019-05-23 04:56:00','客户小哥'),(3,'roy','2019-05-23 08:42:00','roy');
 /*!40000 ALTER TABLE `custb` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -100,7 +101,7 @@ CREATE TABLE `grptb` (
   `crenqi` int(11) DEFAULT NULL,
   `note` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -109,6 +110,7 @@ CREATE TABLE `grptb` (
 
 LOCK TABLES `grptb` WRITE;
 /*!40000 ALTER TABLE `grptb` DISABLE KEYS */;
+INSERT INTO `grptb` VALUES (33,'111','德山',NULL,NULL,'2019-05-23 06:35:23',NULL,NULL,10725,NULL,1,NULL,10725,NULL,'测试账号');
 /*!40000 ALTER TABLE `grptb` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -134,7 +136,7 @@ CREATE TABLE `ordtb` (
   `edate` date DEFAULT NULL,
   `note` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -143,6 +145,7 @@ CREATE TABLE `ordtb` (
 
 LOCK TABLES `ordtb` WRITE;
 /*!40000 ALTER TABLE `ordtb` DISABLE KEYS */;
+INSERT INTO `ordtb` VALUES (4,NULL,'小哥','小哥','douyu','118087','renqi',1000,0,'2019-05-23 04:58:05','2019-05-23','2019-05-23','2222');
 /*!40000 ALTER TABLE `ordtb` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -195,7 +198,7 @@ CREATE TABLE `roles_users` (
 
 LOCK TABLES `roles_users` WRITE;
 /*!40000 ALTER TABLE `roles_users` DISABLE KEYS */;
-INSERT INTO `roles_users` VALUES (1,1),(1,2),(2,1);
+INSERT INTO `roles_users` VALUES (1,1),(1,2),(2,1),(27,1);
 /*!40000 ALTER TABLE `roles_users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -212,7 +215,7 @@ CREATE TABLE `suptb` (
   `ctime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `note` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -221,11 +224,11 @@ CREATE TABLE `suptb` (
 
 LOCK TABLES `suptb` WRITE;
 /*!40000 ALTER TABLE `suptb` DISABLE KEYS */;
+INSERT INTO `suptb` VALUES (5,'德山','2019-05-23 04:29:00','测试供应商');
 /*!40000 ALTER TABLE `suptb` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
-=======
 -- Table structure for table `task`
 --
 
@@ -252,8 +255,18 @@ CREATE TABLE `task` (
   `room_url` char(128) NOT NULL DEFAULT '' COMMENT '房间url链接',
   `content` char(255) NOT NULL DEFAULT '' COMMENT '组装返回给终端的任务内容',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `task`
+--
+
+LOCK TABLES `task` WRITE;
+/*!40000 ALTER TABLE `task` DISABLE KEYS */;
+INSERT INTO `task` VALUES (1,0,'user000000',1,0,'05-05 21:56:15',1554472571,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000000','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000000 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(2,0,'user000000',1,0,'05-05 22:17:29',1554473845,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000000','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000000 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(3,0,'user000003',1,0,'05-22 12:04:40',1553054668,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000003','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000003 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(4,0,'user000001',1,0,'05-22 12:04:15',1555905851,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000001','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000001 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(5,0,'user000002',1,0,'05-22 12:04:21',1558238656,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000002','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000002 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(6,0,'user000000',1,0,'05-22 12:04:09',1558325070,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000000','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000000 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(7,0,'user000003',1,0,'05-22 12:17:46',1557980260,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000003','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000003 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(8,0,'user000002',1,0,'05-22 12:17:32',1558239448,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000002','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000002 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>'),(9,0,'user000001',1,0,'05-22 12:17:26',1558325842,30,23,25,6,100,10000,0,0,'http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000001','https://www.douyu.com/657158','<t a=\"1800|20\" flash=\"1\" isBoot=\"0\" ckul=http://47.244.4.117:8200/useradmin/cookie?user=0&id=user000001 s=https://www.douyu.com/657158><p a=\"1380,1500|0|0|5\" /></t>');
+/*!40000 ALTER TABLE `task` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `user`
@@ -272,7 +285,7 @@ CREATE TABLE `user` (
   `confirmed_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -281,52 +294,10 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'Admin',NULL,'admin','$pbkdf2-sha512$25000$LYUQQuhday1lDCGktNaasw$kVOLgqvN1C9RO2WPG8SDuzicJVxe/dYenMLVJLjitGHa2C87vAZxO5k4DN9hJxoS7Koa9ZUEhUrUlrlUYAG3Zw',1,NULL),(2,'Harry','Brown','harry.brown@example.com','$pbkdf2-sha512$25000$Z4wxRkjpfa/1ntNaC.F8bw$M0GWNVZTEn4RUhCSJFhw3lk96xlRD/ixtrApL6kd9/tMAUxL2UX58yhbjFhOUULq.XgbYSwyCAPP4XsnDGRrQA',1,NULL);
+INSERT INTO `user` VALUES (1,'Admin',NULL,'admin','$pbkdf2-sha512$25000$LYUQQuhday1lDCGktNaasw$kVOLgqvN1C9RO2WPG8SDuzicJVxe/dYenMLVJLjitGHa2C87vAZxO5k4DN9hJxoS7Koa9ZUEhUrUlrlUYAG3Zw',1,NULL),(2,'Harry','Brown','harry.brown@example.com','$pbkdf2-sha512$25000$Z4wxRkjpfa/1ntNaC.F8bw$M0GWNVZTEn4RUhCSJFhw3lk96xlRD/ixtrApL6kd9/tMAUxL2UX58yhbjFhOUULq.XgbYSwyCAPP4XsnDGRrQA',1,NULL),(27,'Cooper','Liu','shan275@163.com','$pbkdf2-sha512$25000$eS8l5BwDQChFqHXu/b937g$teflVtioqMnUgL0kuIUrcOExl0PhmTnZltu8TKEdiqEPIGrH4c47LUdIGw8AElP43OY.nSAVl0u86Sjv/bEPDQ',1,'2019-05-23 16:20:00');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
-
---
--- Table structure for table `users`
---
-
-DROP TABLE IF EXISTS `users`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `users` (
-  `userid` mediumint(8) unsigned NOT NULL AUTO_INCREMENT COMMENT '用户id',
-  `companyid` mediumint(9) NOT NULL DEFAULT '0' COMMENT '公司id',
-  `pid` mediumint(9) NOT NULL DEFAULT '0' COMMENT '父id',
-  `username` char(20) NOT NULL DEFAULT '' COMMENT '用户名',
-  `password` char(32) NOT NULL DEFAULT '' COMMENT '密码',
-  `nickname` char(20) NOT NULL DEFAULT '' COMMENT '昵称',
-  `regdate` int(10) unsigned NOT NULL COMMENT '注册时间',
-  `lastdate` int(11) NOT NULL DEFAULT '0' COMMENT '最后一次登录时间',
-  `regip` char(15) NOT NULL DEFAULT '' COMMENT '注册ip',
-  `lastip` char(15) NOT NULL DEFAULT '' COMMENT '最后一次登录ip',
-  `loginnum` smallint(5) unsigned NOT NULL DEFAULT '0' COMMENT '登录次数',
-  `email` char(32) NOT NULL DEFAULT '' COMMENT '邮箱',
-  `mobile` char(11) NOT NULL DEFAULT '' COMMENT '手机号码',
-  `islock` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否锁定',
-  `vip` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '是否会员',
-  `overduedate` int(11) NOT NULL DEFAULT '0' COMMENT '账户过期时间',
-  `status` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '状态-用于软删除',
-  PRIMARY KEY (`userid`),
-  UNIQUE KEY `username` (`username`),
-  KEY `email` (`email`) USING BTREE
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users`
---
-
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,0,0,'shan275','dc483e80a7a0bd9ef71d8cf973673924','欧耶山哥',1468038500,1473161010,'127.0.0.1','192.168.0.128',28,'shan275@163.com','15915492613',0,0,0,0),(2,0,0,'roy','dc483e80a7a0bd9ef71d8cf973673924','SuperRoy',1468038500,1473161010,'127.0.0.1','192.168.0.128',28,'shan275@163.com','15915492613',0,0,0,0);
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
@@ -336,5 +307,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-05-23  3:15:12
-
+-- Dump completed on 2019-05-24 11:13:57
