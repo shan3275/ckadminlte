@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # 启动调度任务
 
     # 定时每天 04:55:00秒执行任务
-    scheduler.add_job(moveTaskTask, 'cron', day_of_week='0-6', hour=04, minute=45, second=0)
+    #scheduler.add_job(moveTaskTask, 'cron', day_of_week='0-6', hour=04, minute=45, second=0)
     scheduler.start()
 
     while True:

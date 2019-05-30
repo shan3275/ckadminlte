@@ -269,9 +269,17 @@ def resetTaskCK():
         if begin_timestamp >= timestamp - 120 and begin_timestamp <= timestamp + 120:
             ##自动重置ck
             userId = int(task_dict['user_id'])
-            reset_records(userId)
-            ##更新标志位
+            stat = libredis.LibRedis(userId).hashGetAll('g_stat')
+            asigned = int(stat['asigned'])
+            total   = int(stat['total'])
+            request_num = int(task_dict['user_num'])
+            logger.info('asigned:%d,total:%d,request_num:%d', asigned, total, request_num)
             task_id = task_dict['task_id']
+            if (total-asigned) < (request_num*0.7):
+                reset_records(userId)
+                ##更新标志位
+            else:
+                logger.info('%s no need to reset ck',task_id)
             crack.hashset(task_id, 'reset_done', 1)
             logger.info('%s set reset_done to 1', task_id)
 
