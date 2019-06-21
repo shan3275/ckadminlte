@@ -284,12 +284,16 @@ class UserHomeView(admin.AdminIndexView):
         else:
             crack.hashincr('g_stat', 'rereq')
 
-        if record == None:
+        if record == None :
             cookie = "None"
             crack.hashincr('g_stat', 'none')
         else:
-            cookie = record['cookie']
-            crack.hashincr('g_stat', 'asigned')
+            if record.has_key('cookie'):
+                cookie = record['cookie']
+                crack.hashincr('g_stat', 'asigned')
+            else:
+                cookie = "None"
+                crack.hashincr('g_stat', 'none')
 
         rep = {'ip': ip, 'cookie': cookie}
 
