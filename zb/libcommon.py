@@ -602,7 +602,7 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
     #将任务存储在DB15中统一管理
     crack = libredis.LibRedis(15)
     Digit = crack.zCard(CONF['redis']['begintask'])
-    taskID = 'user%02d%04d' %(userId, Digit)
+    taskID = 'user%02d%d%03d' %(userId, task_timestamp, Digit)
     task['task_id'] = taskID
     task['ck_url'] = ck_url+'&id='+taskID
     content= '<t a="%d|20" flash="1" isBoot="0" ckul=%s s=%s><p a="%d,%d|0|0|5" /></t>' \
