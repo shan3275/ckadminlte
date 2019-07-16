@@ -4,5 +4,9 @@ then
 	cd /var/v3
 	date >> reboot.log
 	echo '重启ckadmin' >> reboot.log
-	kill  -HUP $procID
+	#kill  -HUP $procID
+	echo $procID >> reboot.log
+	kill  -9 $procID
+	sleep 1
+	gunicorn -c gunicorn.py app:app &
 fi
