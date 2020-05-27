@@ -377,18 +377,19 @@ class BufferView(admin.BaseView):
       
 admin_bp.add_view(BufferView(name='缓存Cookie',endpoint='redis-cookies',category='Cookies'))
 
-
-
 # Create models
 class Cookie(db.Model):
     __tablename__='cktb'
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer)
     nickname = db.Column(db.String(20),unique=True)
-    grp = db.Column(db.String(20),unique=True)
     password = db.Column(db.String(32))
+    grp = db.Column(db.String(20),unique=True)
+    lastip = db.Column(db.String(15))
     regdate = db.Column(db.Integer)
+    colddate = db.Column(db.Integer)
     cookie   = db.Column(db.Text)
+    areaid   = db.Column(db.Integer)
 
     def __str__(self):
         return "{}, {}".format(self.nickname, self.password)
@@ -400,7 +401,8 @@ class CookieAdmin(sqla.ModelView):
     #can_create = False
     #can_export = True
     #form_args = dict(regdate=((int)(time.time())))
-    column_formatters = dict(regdate=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.regdate))
+    column_formatters = dict(regdate=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.regdate),
+                             colddate=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.colddate))
     action_disallowed_list = ['delete', ]
     can_view_details = True
     column_display_pk = True
@@ -410,17 +412,19 @@ class CookieAdmin(sqla.ModelView):
         'uid',
         'nickname',
         'password',
+        'areaid',
+        'lastip',
         'grp',
         'regdate',
+        'colddate',
         'cookie',
     ]
-    column_filters = ('grp',) 
+    column_filters = ('grp','areaid',) 
     column_default_sort = [('nickname', False), ('password', False)]  # sort on multiple columns
 
     def is_accessible(self):
         return (current_user.is_active and
-                current_user.is_authenticated and
-                current_user.has_role('superuser')
+                current_user.is_authenticated
         )
 
     def _handle_view(self, name, **kwargs):
@@ -545,9 +549,6 @@ class GroupForm(Form):
             return True
         else:
             return False
-
-    
-
 
 class GroupAdmin(sqla.ModelView):
 

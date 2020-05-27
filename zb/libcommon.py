@@ -73,6 +73,29 @@ def cookie_csv_parse_for_db(line):
     record['cookie']      = row[2]
     return record
 
+def cookie_txt_parse_for_db(line):
+    if line == "":
+        return None      
+    logger.info(line)
+    aa=line.split('acf_username=')
+    if aa == "":
+        return None
+    bb=aa[1].split(';', 1)
+    if bb == "":
+        return None
+    nick_name = urllib.unquote(bb[0])
+    pwd=nick_name
+    logger.info(nick_name)
+    if nick_name == "":
+        return None
+
+    # 名称,密码,Cookies
+    record  = {}
+    record['nickname']    = nick_name
+    record['password']    = pwd
+    record['cookie']      = line
+    return record
+
 def cookie_load_for_db(path):
     FILE = open(path, 'rb')
     records =[]
@@ -90,7 +113,7 @@ def cookie_load_for_db(path):
             u8str = line
         else:
             u8str = line.decode('GBK').encode("utf8")
-        record = cookie_csv_parse_for_db(u8str)
+        record = cookie_txt_parse_for_db(u8str)
         if record == None:
             continue
 
@@ -584,6 +607,7 @@ def writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
     task['user_num']   = user_num
     task['req']        = 0
     task['ck_req']     = 0
+    task['ck_req_fail']    = 0
     task['last_time_from'] = last_time_from
     task['last_time_to']   = last_time_to
     task['time_gap']       = time_gap
@@ -817,12 +841,24 @@ def moveTaskFromRedistoDB():
 
 
 def updateTaskCKReq(taskID):
+    '''
+    用户请求ck成功，在任务中加一
+    '''
     if taskID != None:
         crack = libredis.LibRedis(15)
         crack.hashincr(taskID,'ck_req')
     else:
         logger.error('taskID is null, can not update task ck_req number!!!')
 
+def updateTaskCKReqFail(taskID):
+    '''
+    用户请求ck成功为空，在任务中加一
+    '''
+    if taskID != None:
+        crack = libredis.LibRedis(15)
+        crack.hashincr(taskID,'ck_req_fail')
+    else:
+        logger.error('taskID is null, can not update task ck_req number!!!')
 
 def dateRangeToTimeStamp(date_range):
     """

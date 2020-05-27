@@ -17,6 +17,7 @@ import globalvar as gl
 import libdb    as libdb
 import libredis as libredis
 import libcommon as libcommon
+import libcm     as libcm
 
 global logger
 global CONF
@@ -276,28 +277,19 @@ class UserHomeView(admin.AdminIndexView):
             # default 0
             userId = 0
         taskID = request.args.get('id')
-        crack = libredis.LibRedis(userId)
-        crack.hashincr('g_stat', 'req')
-        record = libcommon.get_record_from_redis(ip, userId)
-        if record == None:
-            record = libcommon.fetch_record_from_redis(ip, userId)
-        else:
-            crack.hashincr('g_stat', 'rereq')
-
+        record = libcm.getCKFromDB(ip,userId)
         if record == None :
             cookie = "None"
-            crack.hashincr('g_stat', 'none')
+            libcommon.updateTaskCKReqFail(taskID)
         else:
-            if record.has_key('cookie'):
-                cookie = record['cookie']
-                crack.hashincr('g_stat', 'asigned')
+            if len(record) >= 12:
+                cookie = record[11]
+                libcommon.updateTaskCKReq(taskID)
             else:
                 cookie = "None"
-                crack.hashincr('g_stat', 'none')
+                libcommon.updateTaskCKReqFail(taskID)
 
         rep = {'ip': ip, 'cookie': cookie}
-
-        libcommon.updateTaskCKReq(taskID)
 
         # logger.debug(rep)
         return jsonify(rep)
