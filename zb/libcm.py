@@ -74,7 +74,7 @@ def _writeIPandAreaIDtoRedis(ip, area):
     name                    = ip
     info['id']              = 0
     info['addr']            = ip
-    info['areaid']          = area['id']
+    info['areaid']          = 0
     info['postcode']        = area['postcode']
     info['submission_date'] = _now()
     if libredis.LibRedis(CONF['redis']['ipdb']).hashMSet(name, info):
@@ -128,9 +128,9 @@ def _getIPAreaOnlineAndWrToRedis(ip):
         return False 
     #根据邮政编码查询区域ID
     postcode = area['postcode']
-    area = _getAreaIDFromRedis(postcode)
-    if  area == False : 
-        logger.info('area 记录为空, %s-%s-%s', area['state'], area['province'], area['city'])
+    Areaa = _getAreaIDFromRedis(postcode)
+    if  Areaa == False : 
+        logger.info('area 记录为空, ', area['state'], area['province'], area['city'])
         #区域记录为空，故需要写入数据库表项中
         if _writeAreaToRedis(area) == False:
             logger.error('将区域信息写入数据库失败')
