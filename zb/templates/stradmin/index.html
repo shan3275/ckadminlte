@@ -23,10 +23,11 @@
         {% else %}
             <div class="col-lg-3 col-xs-6">
                 <small>
-                    <li>共有 {{ g_stat['total'] }} 个CK  可使用 {{ g_stat['could_use'] }} 个CK</li>
+                    <li>DB中共有 {{ g_stat['total'] }} 个CK &nbsp; DB中可使用 {{ g_stat['could_use'] }} 个CK</li>
+                    <li>缓存中未用 {{ g_stat['unused'] }} 个CK </li>
+                    <li>总计可使用 {{ g_stat['unused'] + g_stat['could_use'] }} 个CK </li>
                     </br>
                     <li>启动时间：{{ g_stat['boot_ts'] }} </li>
-                    <li>重置时间：{{ g_stat['reset_ts'] }} </li>
                 </small>
             </div>
 

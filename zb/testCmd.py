@@ -164,6 +164,39 @@ class Cli(Cmd):
     def help_upip(self):
         print '查询IP归属地并记录入库，输入参数：ipFile  outFile'
 
+    def do_mvarea(self,arg):
+        total = libcm.queryAreaCount()
+        print 'DB 中表项数量:  %d' %(total)
+        num   = libcm.getAreaFromDBandWriteToRedis()
+        print '写入Reis表项数量: %d' %(num)
+    
+    def help_mvarea(self):
+        print '将mysql中area表项数据移动到redis中'
+
+    def do_mvip(self,arg):
+        total = libcm.queryIPCount()
+        print 'DB 中表项数量:  %d' %(total)
+        num = libcm.getIptbFromDBandWriteRedis()
+        print '写入Reis表项数量: %d' %(num)
+    
+    def help_mvip(self):
+        print '将mysql中ip表项数据移动到redis中'
+
+    def do_ipcode(self, arg):
+        total = libcm.queryIPCount()
+        print 'DB 中表项数量:  %d' %(total)
+        num = libcm.updateIptbPostcode()
+        print 'DB 中更新成功数量: %d'  %(num)
+
+    def help_ipcode(self):
+        print 'mysql中iptb表项增加了postcode字段，需要查询area更新字段值'
+
+    def do_comip(self,arg):
+        libcm.compareIpDB()
+    
+    def help_comip(self):
+        print '比较线上获取的ip和本地ip库是否一致'
+
 if __name__ == "__main__":
     reload(sys)
     sys.setdefaultencoding('utf8')

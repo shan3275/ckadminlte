@@ -277,13 +277,13 @@ class UserHomeView(admin.AdminIndexView):
             # default 0
             userId = 0
         taskID = request.args.get('id')
-        record = libcm.getCKFromDB(ip,userId)
+        record = libcm.getOneCK(ip,userId)
         if record == None :
             cookie = "None"
             libcommon.updateTaskCKReqFail(taskID)
         else:
-            if len(record) >= 12:
-                cookie = record[11]
+            if record.has_key('cookie'):
+                cookie = record['cookie']
                 libcommon.updateTaskCKReq(taskID)
             else:
                 cookie = "None"

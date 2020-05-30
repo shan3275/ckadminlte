@@ -12,6 +12,7 @@ import libdb as libdb
 import libredis as libredis
 import chardet
 import urllib
+import ipdb
 import time,datetime
 import globalvar as gl
 
@@ -59,63 +60,67 @@ def getIPAreaOnline(ip):
                         phonecode= responsed['data'][5])
             return area;
 
-def writeIPandAreaIDtoDB(ip, areaID):
+def _writeIPandAreaIDtoRedis(ip, area):
     '''
     将ip地址和区域id信息写入数据库表项
     Args:
-        ip:       IP地址
-        areaID:   区域ID
+        ip:         IP地址
+        area:  dist(province='',city='', postcode='', id='')
     Return:
         true or false
     '''
-    key = "addr, areaid"
-    value = "'%s', '%s' " %(ip, areaID)
-    logger.debug('key:%s, value:%s', key, value)
-    rv = libdb.LibDB().insert_db(key, value, CONF['database']['iptb'])
-    return rv
+    logger.info(ip)
+    info = dict()
+    name                    = ip
+    info['id']              = 0
+    info['addr']            = ip
+    info['areaid']          = area['id']
+    info['postcode']        = area['postcode']
+    info['submission_date'] = _now()
+    if libredis.LibRedis(CONF['redis']['ipdb']).hashMSet(name, info):
+        logger.info('插入到redis成功')
+        return True
+    else:
+        logger.error('插入到redis失败')
+        return False 
 
-
-def writeAreaToDB(area):
+def _writeAreaToRedis(area):
     """
     将区域信息写入表项area，不是IP地址信息
     :param area: dict(state='',province='',city='',postcode='',phonecode='')
     :return: true or false
     """
-    key = "province, city, postcode, phonecode"
-    value = "'%s', '%s', '%s', '%s'" \
-            %(area['province'], area['city'], area['postcode'],area['phonecode'])
-    logger.debug('key:%s, value:%s', key, value)
-    rv = libdb.LibDB().insert_db(key, value, CONF['database']['area'])
-    return rv
+    name = area['postcode']
+    if libredis.LibRedis(CONF['redis']['areadb']).hashMSet(name, area):  
+        return True
+    else:
+        return False
 
-def getAreaIDFromDB(postcode):
+def _getAreaIDFromRedis(postcode):
     '''
     通过邮编查询区域ID
     Args:
         postcode: 邮政编码
     Return:
-        areaId:  false or None or 成功值
+        areaId:  false or None or dict(id='',postcode='')
     '''
-    sql = libdb.LibDB().query_one('postcode', postcode, CONF['database']['area'])
-    if  sql == False : #查询失败
-        logger.error('get AreaID 读数据库失败')
+    crack = libredis.LibRedis(CONF['redis']['areadb'])
+    len = crack.hashHlen(postcode)
+    if len == 0:
+        logger.info('postcode 记录为空, %s', postcode)
         return False
-    elif sql == None:   #查询成功，但是为空
-        logger.info('area 记录为空, not found 邮编：%s',  postcode)
-        return None
-    else: #查询成功
-        logger.info(sql);
-        areaID = sql[0]
-        return areaID
+    record = crack.hashGetAll(postcode)
+    if record.has_key('postcode') ==False:
+        return False
+    return record
 
-
-def getIPAreaOnlineAndWrToDB(ip):
+def _getIPAreaOnlineAndWrToRedis(ip):
     '''
     获取区域信息，并写入数据库
     Args:
         ip:    请求的IP
     Return:
-        areaId: false 为失败，否则为数值ID
+        postcode: false 为失败，否则为字符串
     '''
     #获取区域信息
     area = getIPAreaOnline(ip)
@@ -123,58 +128,48 @@ def getIPAreaOnlineAndWrToDB(ip):
         return False 
     #根据邮政编码查询区域ID
     postcode = area['postcode']
-    areaID = getAreaIDFromDB(postcode)
-    if  areaID == False : #查询失败
-        logger.error('get AreaID 读数据库失败')
-        return False
-    elif areaID == None:   #查询成功，但是为空
+    area = _getAreaIDFromRedis(postcode)
+    if  area == False : 
         logger.info('area 记录为空, %s-%s-%s', area['state'], area['province'], area['city'])
         #区域记录为空，故需要写入数据库表项中
-        if writeAreaToDB(area) == False:
+        if _writeAreaToRedis(area) == False:
             logger.error('将区域信息写入数据库失败')
             return False
-        #再次查询
-        areaID = getAreaIDFromDB(postcode)
-        if  areaID == False : #查询失败
-            logger.error('再次 get AreaID 读数据库失败')
-            return False
-        elif areaID == None:
-            logger.error('正常逻辑不会执行到这里，除非闹鬼了')
-            return False  
-    
+        
     #将IP和区域ID写入数据库iptb表项中
-    rv = writeIPandAreaIDtoDB(ip, areaID)
+    rv = _writeIPandAreaIDtoRedis(ip, area)
     if rv == False:
         logger.error('将IP和区域ID写入数据库iptb表项中 失败')
 
-    return areaID
+    return area['postcode']
     
-
-def getIPAreaID(ip):
+def _getIPAreaID(ip):
     '''
     查询ip的区域id，如果查询不到自动通过api获取，获取成功之后插入数据库中
     Args:
         ip:    请求的IP
     Return:
-        areaID:    false 为失败,否则为数值
+        postCode:    false 为失败,否则为邮编
     '''
     #首先查询本地ip库
-    sql = libdb.LibDB().query_one('addr', ip, CONF['database']['iptb'])
-    if  sql == False : #查询失败
-        logger.error('getIPAreaID 读数据库失败')
-        return False
-    elif sql == None:   #查询成功，但是为空
+    crack = libredis.LibRedis(CONF['redis']['ipdb'])
+    len = crack.hashHlen(ip)
+    if len == 0:
         logger.info('ip 记录为空, %s', ip)
         #线上查询，并写入数据库
-        areaID = getIPAreaOnlineAndWrToDB(ip)
-    else: #查询成功
-        areaID = sql[2]
-        logger.info(sql);
+        postCode = _getIPAreaOnlineAndWrToRedis(ip)
+        return postCode
     
-    return areaID
+    #redis中存在
+    record = crack.hashGetAll(ip)
+    if record.has_key('postcode') ==False:
+        logger.error('异常，iptb中 postcode被删除')
+        return False
+    postCode = record['postcode']
 
+    return postCode
 
-def getCKByIP(ip):
+def _getCKByIP(ip):
     '''
         通过查询ip，获取一条ck记录
     Args:
@@ -182,6 +177,7 @@ def getCKByIP(ip):
     Return:
         record: ck记录表项 or None or False(运行出错)
     '''
+    
     sql = libdb.LibDB().query_one('lastip', ip, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
@@ -196,139 +192,384 @@ def getCKByIP(ip):
         if rv == False:
             logger.error('更新ck表冷却时间失败')
             return False
-        return sql   #成功
+        record  =dict()
+        record['cookie'] = sql[11]
+        return record  #成功
     return None
 
-def getCKByID(ip,areaId):
+def _getCKByPostCode(ip, postCode):
     '''
-        通过查询区域ID，获取一条ck记录
+    获取一条ck记录,从mysql中
     Args:
-        ip:  IP地址
-        areaId:   区域Id索引
+        ip:         IP地址
+        postCode:   邮编信息
     Return:
-        record: ck记录表项 or None or False(运行出错)
+        record: ck记录表项 or None or False
     '''
-    #查询命中区域ID，且冷却时间最小，但是必须小于当前时间
-    key = 'colddate'
-    condition = "areaid=%d" %(areaId)
-    info = libdb.LibDB().min_key_of_condition(key, CONF['database']['cktb'], condition)
-    if info == False:
-        logger.error('查询区域ID中最小值失败')
-        return False
-    logger.info(type(info))
-    logger.info(info)
-    if  info:
-        min = info[0]
-        if min == None:
-            return None
-    else:
+    if ip == '' or postCode == '':
+        logger.error('ip(%s) or postCode(%s) null', ip, postCode)
         return None
-    logger.info(min)
-
-    #根据最小值和区域ID再查询一次，有点蛋疼
     timestamp = int(time.time())
-    conditon = 'areaid=%d and colddate=%s' % (areaId, min)
-    sql = libdb.LibDB().query_one_by_condition(conditon, CONF['database']['cktb'])
-    if sql == False: #查询失败
-        logger.error('get ck by %s 读数据库失败', condition)
-        return False
-    elif sql == None: 
-        logger.error('闹鬼了才会执行到这里')
-    logger.info(sql)
-    if sql == None:
-        return False
-    
-    colddate = sql[8]
-    index    = sql[0]
-    logger.info('冷却时间：%d',colddate)
-    if colddate <= timestamp: #冷却时间已经过了，可以使用
-        setval = "colddate=%d,lastip='%s'" %(timestamp+CONF['ckcoldtime'], ip)
-        condition = "id=%d" %(index)
-        logger.debug('setval:%s, condition:%s', setval, condition)
-        rv =  libdb.LibDB().update_db(setval, condition, CONF['database']['cktb'])
-        if rv == False:
-            logger.error('更新ck表冷却时间及IP失败')
-            return False
-        return sql #成功
-    return None
-
-
-def getCKByNoneIP(ip,areaId):
-    '''
-        通过查询ip为空的记录，获取一条ck记录
-    Args:
-        ip:  IP地址
-        areaId:   区域Id索引
-    Return:
-        record: ck记录表项 or None or False(运行出错)
-    '''
-    sql = libdb.LibDB().query_one('lastip', '', CONF['database']['cktb'])
+    #condition = "postcode='%s' and colddate<%d limit 1" %(postCode, timestamp)
+    condition = "postcode='%s' order by colddate asc limit 10" %(postCode)
+    sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
         return False
     elif sql :   #查询成功
         logger.info(sql);
-        timestamp = int(time.time())
-        setval = "colddate=%d,lastip='%s',areaid=%d" %(timestamp+CONF['ckcoldtime'],ip,areaId)
-        condition = "id=%d" %(sql[0])
-        logger.debug('setval:%s, condition:%s', setval, condition)
-        rv =  libdb.LibDB().update_db(setval, condition, CONF['database']['cktb'])
-        if rv == False:
-            logger.error('更新ck表冷却时间失败')
-            return False
-        return sql   #成功
-    return None
+        colddate = sql[8]
+        logger.info('冷却时间：%d',colddate)
+        if colddate <= timestamp: #冷却时间已经过了，可以使用
+            setval = "colddate=%d,lastip='%s',postcode='%s'" %(timestamp+CONF['ckcoldtime'], ip, postCode)
+            condition = "id=%d" %(sql[0])
+            logger.debug('setval:%s, condition:%s', setval, condition)
+            rv =  libdb.LibDB().update_db(setval, condition, CONF['database']['cktb'])
+            if rv == False:
+                logger.error('更新ck表冷却时间失败')
+                return False
+            record  =dict()
+            record['cookie'] = sql[11]
+            return record  #成功
+    
+    return None    
 
-def getCKByIDandIP(ip, areaId):
+
+def _getOneCKFromRedisAndWriteToDB(ip,postCode):
     '''
-    获取一条ck记录
+    从Redis中获取一条ck，添加ip、冷却时间、邮编，插入mysql
     Args:
-        ip:  IP地址
-        areaId:   区域Id索引
+        ip:         IP地址
+        postCode:   邮编信息
     Return:
-        record: ck记录表项 or None
+        record: ck记录表项 or None or False    
     '''
-    #查询IP
-    record = getCKByIP(ip)
-    if record == False:
-        return None
-    elif record != None:
-        return record
-    
-    #查询成功,但是为空
-    logger.info('ck 查询 ip 记录为空, %s', ip)
-    #查询区域ID
-    record = getCKByID(ip,areaId)
-    if record == False:
-        return None
-    elif record != None:
-        return record
-    
-    #查询成功，但是为空，下面查找ip为空表项，也就是未使用的记录
-    record = getCKByNoneIP(ip,areaId)
-    if record == False:
-        return None
-    elif record != None:
-        return record
-    
-    return None
+    #获取redis中ck 键值
+    crack = libredis.LibRedis(CONF['redis']['cktbdb'])
+    if CONF['random'] == True:
+        num = crack.setCard(CONF['redis']['live'])
+        if num == 0:
+            logger.info('cookie has used over, fecth record fail')
+            return None
 
+        nickname = crack.setSpop(CONF['redis']['live'])
+        if nickname == None:
+            logger.error('fetch record get nickname null!!')
+            return None
+    else:
+        num = crack.listLLen(CONF['redis']['live'])
+        if num == 0:
+            logger.info('cookie has used over, fecth record fail')
+            return None
 
-def getCKFromDB(ip,userId):
+        nickname = crack.listLPop(CONF['redis']['live'])
+        if nickname == None:
+            logger.error('fetch record get nickname null!!')
+            return None
+
+    #获取cookie
+    record = crack.hashGetAll(nickname)
+    if record == None:
+        logger.error('cookie record not existed nickname:%s', nickname)
+        return None
+    
+    if record.has_key('nickname') == False:
+        logger.info(nickname)
+        logger.error('redis ck record no exist nickname, error!')
+        logger.info(record)
+        return None
+    ##插入ck到mysql中
+    #写入数据库
+    sql = libdb.LibDB().query_one('nickname', record['nickname'], CONF['database']['table'])
+    if sql == False:
+        logger.error('查询 ck失败')
+        return None
+    if sql == None:
+        timestamp = int(time.time())
+        key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, postcode"
+        value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s'" \
+                        %(record['nickname'], record['password'], 'G0', \
+                          timestamp, timestamp,timestamp+CONF['ckcoldtime'], \
+                          record['cookie'], ip, postCode)
+        logger.debug('key:%s, value:%s', key, value)
+        rv = libdb.LibDB().insert_db(key, value, CONF['database']['cktb'])
+        if rv != True:
+            logger.error('CK 插入mysql失败')
+            return None
+    else:
+        logger.error('redis 和 mysql 中同时存在记录，请关注')
+        return None
+    
+    #删除redis中已经去除的ck
+    if crack.delete(nickname) :
+        logger.info('从redis中删除一条ck成功')
+
+    return record     
+
+def getOneCK(ip,userId):
     '''
-    从mysql数据库中获取一条cookie
+    从mysql数据库或者redis获取一条cookie
     Args:
         ip :    请求的IP
         userId: 用户ID，暂不使用 
     '''
-    areaId = getIPAreaID(ip);
-    if areaId == False:
+    # 1.首先查询mysql中是否存在该ip的记录
+    record = _getCKByIP(ip)
+    if record == False:
         return None
+    elif record != None:
+        return record
+     
+    # 2.没有记录，则获取IP归属地
+    postCode = _getIPAreaID(ip)
+    if postCode == False :
+        return None
+    
+    if postCode == '':
+        logger.error('postCode is null')
+        return None
+      
+    
+    # 3.根据邮编查询ck记录
+    record = _getCKByPostCode(ip, postCode)
+    if record == False:
+        return None
+    elif record != None:
+        return record
 
-    #根据区域ID查询ck记录    
-    record = getCKByIDandIP(ip, areaId)
+    # 4. 从redis中取出一条空记录（redis中存放的都是空记录）
+    record = _getOneCKFromRedisAndWriteToDB(ip,postCode)
     logger.info(record)
     return record
+
+def _now():
+    return time.strftime("%m-%d %H:%M:%S", time.localtime())
+
+def _queryCount(table):
+    '''
+    查询数据库中table的表项数量
+    return：
+        total: 表项数量
+    '''
+    count = libdb.LibDB().query_count(table)
+    if count != False:
+        total = count[0]
+    else:
+        total = 0
+    return total
+  
+
+def queryAreaCount():
+    return _queryCount(CONF['database']['area'])
+
+def getAreaFromDBandWriteToRedis():
+    '''
+    从mysql 数据库中读取area表项，写入redis中
+    存放到redis 中的表项数据格式：
+    key：dict（）
+    postcode: {id='',province='',city='',postcode='',areacode='',submission_date=''}
+    Args:
+        None
+    return:
+        num: 插入成功数量
+    '''
+    num = 0
+    #使用分页查询
+    page_size = 100
+    total = queryAreaCount()
+    if total == 0:
+        return num
+    
+    page  = total / page_size
+    page1 = total % page_size
+    if page1 != 0:
+        page = page + 1
+    
+    for p in range(0, page):
+        limit_param = ' limit ' + str(p * page_size) + ',' + str(page_size)
+        sql = 'select * from ' + CONF['database']['area'] + limit_param
+        areaRows = libdb.LibDB().query_all_by_condition(sql)
+        for area in areaRows:
+            logger.info(area)
+            info = dict()
+            name                    = area[4]
+            info['id']              = area[0]
+            info['province']        = area[1]
+            info['city']            = area[2]
+            info['postcode']        = area[4]
+            info['phonecode']       = area[5]
+            info['submission_date'] = _now()
+            if libredis.LibRedis(CONF['redis']['areadb']).hashMSet(name, info):
+                logger.info('插入到redis成功')
+                num +=1
+            else:
+                logger.error('插入到redis失败')    
+
+    return num
+
+def queryIPCount():
+    return _queryCount(CONF['database']['iptb'])    
+
+def queryIPCountByCondition(condition):
+    '''
+    查询数据库中table的表项数量
+    return：
+        total: 表项数量
+    '''
+    count = libdb.LibDB().query_count_by_condition(condition, CONF['database']['iptb'])
+    if count != False:
+        total = count[0]
+    else:
+        total = 0
+    return total 
+
+def getIptbFromDBandWriteRedis():
+    '''
+    从mysql 数据库中读取ip表项，写入redis中
+    存放到redis 中的表项数据格式：
+    key：dict（）
+    ip: {id='',addr='',areaid='',postcode=''}
+    Args:
+        None
+    return:
+        num: 插入成功数量
+    '''
+    num = 0
+    #使用分页查询
+    page_size = 1000
+    condition = " postcode!='0' "
+    total = queryIPCountByCondition(condition)    
+    if total == 0:
+        return num
+    
+    page  = total / page_size
+    page1 = total % page_size
+    if page1 != 0:
+        page = page + 1
+    
+    for p in range(0, page):
+        limit_param = ' limit ' + str(p * page_size) + ',' + str(page_size)
+        sql = 'select * from ' + CONF['database']['iptb'] +' where ' + condition + limit_param
+        ipRows = libdb.LibDB().query_all_by_condition(sql)
+        for ip in ipRows:
+            logger.info(ip)
+            info = dict()
+            name                    = ip[1]
+            info['id']              = ip[0]
+            info['addr']            = ip[1]
+            info['areaid']          = ip[2]
+            info['postcode']        = ip[4]
+            info['submission_date'] = _now()
+            if libredis.LibRedis(CONF['redis']['ipdb']).hashMSet(name, info):
+                logger.info('插入到redis成功')
+                num +=1
+            else:
+                logger.error('插入到redis失败')
+    
+    return num
+
+def updateIptbPostcode():
+    '''
+    mysql 中iptb新增了postcode字段，需要将postcode字段从area表中更新过来。
+    读iptb表项中的areaid,然后查询area表项，获取postcode填入iptb中。
+    后续以postcode作为地区标识码
+    return:
+        num: 更新成功数量
+    '''
+    num = 0
+    #使用分页查询
+    page_size = 1000
+    condition = " postcode='0' "
+    total = queryIPCountByCondition(condition)
+    if total == 0:
+        return num
+    
+    page  = total / page_size
+    page1 = total % page_size
+    if page1 != 0:
+        page = page + 1
+    
+    for p in range(0, page):
+        limit_param = ' limit ' + str(p * page_size) + ',' + str(page_size)
+        sql = 'select * from ' + CONF['database']['iptb'] +' where ' + condition + limit_param
+        ipRows = libdb.LibDB().query_all_by_condition(sql)
+        for ip in ipRows:
+            logger.info(ip)
+            id      = ip[0]
+            areaid  = ip[2]
+            #查询 areaid 对应的postcode
+            area = libdb.LibDB().query_by_id(areaid, CONF['database']['area'])
+            if area == False or area == None:
+                continue
+            postcode = area[4]
+            #更新进入表项
+            setval = "postcode='%s'" %(postcode)
+            condition = "id=%s" %(id)
+            logger.debug('setval:%s, condition:%s', setval, condition)
+            if libdb.LibDB().update_db(setval, condition, CONF['database']['iptb']) :
+                num += 1
+    
+    return num
+
+def _saveAccountToFile(line,file):
+    """
+    功能：写行内容到文件中
+    :param line: 账号内容
+    :return: 无
+    """
+    if file == '':
+        logger.error('输出账号文件为空')
+        return
+    str = file.split('.')
+    fileName = str[0] + time.strftime('%Y-%m-%d') +'.'+ str[1]
+    logger.info('SaveAccountToFile: %s', fileName)
+    f = open(fileName, 'a+')
+    f.writelines(line + '\n')
+    f.close()
+    logger.info('账号写入文件：%s',line)
+
+def compareIpDB():
+    '''
+    将数据库中通过付费api接口获取的ip区域记录和ipip.net的离线数据库进行对比，结果写入一个文件
+    '''
+    db = ipdb.City(CONF['ipdb'])
+    num = 0
+    #使用分页查询
+    page_size = 1000
+    condition = " postcode!='0' "
+    total = queryIPCountByCondition(condition)
+    if total == 0:
+        return num
+    
+    page  = total / page_size
+    page1 = total % page_size
+    if page1 != 0:
+        page = page + 1
+    
+    for p in range(0, page):
+        limit_param = ' limit ' + str(p * page_size) + ',' + str(page_size)
+        sql = 'select * from ' + CONF['database']['iptb'] +' where ' + condition + limit_param
+        ipRows = libdb.LibDB().query_all_by_condition(sql)
+        for ip in ipRows:
+            logger.info(ip)
+            id      = ip[0]
+            areaid  = ip[2]
+            addr    = ip[1]
+            #查询 areaid 对应的postcode
+            area = libdb.LibDB().query_by_id(areaid, CONF['database']['area'])
+            if area == False or area == None:
+                continue
+            postcode = area[4]
+            province = area[1]
+            city     = area[2]
+            localArea = db.find_map(addr, "CN")
+            if city == localArea['city_name']:
+                line = '%s %s %s %s %s 匹配' %(addr, province,city, localArea['region_name'], localArea['city_name'])
+            else:
+                line = '%s %s %s %s %s 错配' %(addr, province,city, localArea['region_name'], localArea['city_name'])
+            _saveAccountToFile(line,'ip.txt')
+            num +=1
+    return num
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

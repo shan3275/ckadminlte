@@ -25,6 +25,7 @@ import urllib
 import random
 import globalvar as gl
 import libdb as libdb
+import libredis as libredis
 import libcommon as libcommon
 import time
 
@@ -81,20 +82,27 @@ class MyHomeView(admin.AdminIndexView):
     def index(self):
         global g_stat
         # 获取表项数量
-        count = libdb.LibDB().query_count(CONF['database']['table'])
+        count = libdb.LibDB().query_count(CONF['database']['cktb'])
         if count != False:
             Digit = count[0]
         else:
             Digit = '0'
         g_stat['total'] = Digit
-        timestamp = int(time.time() - 3600 * 24 * 6)
-        conditions = 'lastdate >= %d' % (timestamp)
-        count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['table'])
+        timestamp = int(time.time())
+        conditions = 'colddate < %d' % (timestamp)
+        count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['cktb'])
         if count != False:
             Digit = count[0]
         else:
             Digit = '0'
         g_stat['could_use'] = Digit
+        #获取redis中ck数量
+        crack = libredis.LibRedis(CONF['redis']['cktbdb'])
+        if CONF['random'] == True:
+            num = crack.setCard(CONF['redis']['live'])
+        else:
+            num = crack.listLLen(CONF['redis']['live'])
+        g_stat['unused'] = num
         return self.render('stradmin/index.html',  g_stat=g_stat)
 
     @admin.expose('/download', methods=['POST'])
@@ -131,7 +139,8 @@ class MyHomeView(admin.AdminIndexView):
         logger.debug('request.files:%s', request.files['file'])
         if request.method == 'POST':
             # 保存文件
-            ou = libcommon.writeFileToDB(request.files['file'])
+            #ou = libcommon.writeFileToDB(request.files['file'])
+            ou = libcommon.writeCkFileToDBorRedis(request.files['file'])
             if ou['error'] == 0:
                 return redirect(url_for('admin.index'))
             else:

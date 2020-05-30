@@ -58,42 +58,33 @@ def updateColdDateToDB(nickname,timestamp):
     rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
     return rv
 
-def cookie_csv_parse_for_db(line):
-    row = line.split(',')
-    if len(row) < 3:
-        return None
-
-    if row[0] == "" or row[0] == "名称":
-        return None
-
-    # 名称,密码,Cookies
-    record  = {}
-    record['nickname']    = row[0]
-    record['password']    = row[1]
-    record['cookie']      = row[2]
-    return record
-
 def cookie_txt_parse_for_db(line):
     if line == "":
+        logger.error('line null')
         return None      
-    logger.info(line)
+    if line.find('acf_username=') < 0 :
+        logger.error('acf_username= not found')
+        return None 
     aa=line.split('acf_username=')
     if aa == "":
+        logger.error('aa null')
         return None
     bb=aa[1].split(';', 1)
     if bb == "":
+        logger.error('bb null')
         return None
     nick_name = urllib.unquote(bb[0])
     pwd=nick_name
-    logger.info(nick_name)
     if nick_name == "":
+        logger.error('nickname null')
         return None
 
     # 名称,密码,Cookies
     record  = {}
-    record['nickname']    = nick_name
-    record['password']    = pwd
-    record['cookie']      = line
+    record['nickname']        = nick_name
+    record['password']        = pwd
+    record['cookie']          = line
+    record['submission_date'] = now()
     return record
 
 def cookie_load_for_db(path):
@@ -115,6 +106,8 @@ def cookie_load_for_db(path):
             u8str = line.decode('GBK').encode("utf8")
         record = cookie_txt_parse_for_db(u8str)
         if record == None:
+            logger.error('line record 为空')
+            logger.info(u8str)
             continue
 
         record['seq'] = seq
@@ -125,7 +118,7 @@ def cookie_load_for_db(path):
 
 def writeFileToDB(file, group='G0'):
     """
-    将cooikes csv文件写入数据库
+    将cooikes txt文件写入数据库
     :param file: cookie文件描述符
     :return:   ou  ：字典，包含信息
                ou['data']['num']  :成功数量
@@ -163,6 +156,7 @@ def writeFileToDB(file, group='G0'):
                 ou['error'] = 1
                 ou['msg']   = '更新数据库失败'
                 continue
+
     return ou
 
 def cookie_append(records):
@@ -243,8 +237,6 @@ def takeOutCksByTimeStampRange(timestampBegin, timestampEnd):
     if records == False:
         return False
     return records
-
-
 
 def writeRecordsToRedis(records, userId):
 
@@ -328,25 +320,7 @@ def takeOutCksFromDBToRedis(index, num, userId):
 
     return True
 
-def cookie_csv_parse_for_redis(line):
-    row = line.split(',')
-    if len(row) < 3:
-        return None
-
-    if row[0] == "" or row[0] == "ID":
-        return None
-
-    # 名称,密码,Cookies
-    record  = {}
-    record['id']          = row[0]
-    record['nickname']    = row[1]
-    record['password']    = row[2]
-    record['cookie']      = row[7]
-    record['uptime']      = row[8]
-    record['regtime']     = row[9]
-    return record
-
-def cookie_txt_parse_for_redis(line):
+def cookie_txt_parse(line):
     if line == '':
         return None
     aa = line.split('acf_nickname=')
@@ -379,8 +353,7 @@ def cookie_load_for_redis(path):
             u8str = line
         else:
             u8str = line.decode('GBK').encode("utf8")
-        #record = cookie_csv_parse_for_redis(u8str)
-        record = cookie_txt_parse_for_redis(u8str)
+        record = cookie_txt_parse(u8str)
         if record == None:
             continue
 
@@ -391,9 +364,6 @@ def cookie_load_for_redis(path):
         seq += 1
     logger.debug("%d cookies loaded from %s!" ,len(records), path)
     return records
-
-
-
 
 def writeFileToRedis(file,userId):
     """
@@ -473,6 +443,91 @@ def get_record_from_redis(ip,userId):
     record = crack.hashGetAll(nickname)
     logger.info(record)
     return record
+
+def writeOneCkRecordToRedis(record, userId):
+    '''
+    将一条ck计入写入redis中
+    Args:
+        record: ck dict(nickname='',password='', cookie='')
+        userId: redis db id, 0-15
+    Return:
+        True or False
+    '''
+    if record == None :
+        return False
+
+    crack = libredis.LibRedis(userId)
+    # cookie写入redis
+    rv = crack.hashMSet(record['nickname'], record)
+    if rv != True:
+        logger.info('write to redis fail %s', record)
+        return False
+    ##写入集合和写入列表二选一
+    if CONF['random'] == True:
+        # ck名称集合，写入redis，集合为无序集合
+        rv = crack.setAdd(CONF['redis']['live'], record['nickname'])
+        if rv != True:
+            logger.error('repeat,write ck nickanme set to redis fail')
+            return False
+        else:
+            logger.info('write ck nickname to set success!')
+    else:
+        #ck名称列表，写入redis，列表元素可以重复
+        rv = crack.listLPush(CONF['redis']['live'], record['nickname'])
+        if rv <= 0:
+            logger.error('write ck nickname to redis live list fail!!')
+            return False
+        else:
+            logger.info('write ck nickname to list success!')
+    
+    return True
+
+def writeCkFileToDBorRedis(file, group='G0'):
+    """
+    将cooikes txt文件写入数据库,如果mysql中存在，直接更新到mysql中，如果不存在，保存在redis中，作为未使用资源
+    add by shan275 at 2020-5-28
+    :param file: cookie文件描述符
+    :return:   ou  ：字典，包含信息
+               ou['data']['num']  :成功数量
+               ou['msg']          :信息
+               ou['error']        : 0 ok
+                                  : 1 写数据库失败
+    """
+    ou = dict(error=0, data=dict(), msg='ok')
+    basepath = os.path.dirname(__file__)  # 当前文件所在路径
+    upload_path = os.path.join(basepath, 'uploads', secure_filename(file.filename))  # 注意：没有的文件夹一定要先创建，不然会提示没有该路径
+    file.save(upload_path)
+
+    # 读取文件
+    logger.debug("upload_path: %s", upload_path)
+    records = cookie_load_for_db(upload_path)
+    #logger.debug(records)
+    ou['data']['num'] = len(records)
+
+    #写入数据库
+    for record in records:
+        sql = libdb.LibDB().query_one('nickname', record['nickname'], CONF['database']['table'])
+        if sql == False:
+            ou['error'] = 1
+            ou['msg']   = '读数据库失败'
+            continue
+        if sql == None:
+            #查询后没有，则写入redis中
+            logger.info('mysql 中没有ck，故将ck写入Redis')
+            rv = writeOneCkRecordToRedis(record, CONF['redis']['cktbdb'])
+            if rv != True:
+                ou['error'] = 1
+                ou['msg']   = '写数据库失败'
+                continue
+        else:
+            #查询到了，更新数据库
+            rv = cookieUpdateToDB(record['nickname'], record['password'], record['cookie'])
+            if rv != True:
+                ou['error'] = 1
+                ou['msg']   = '更新数据库失败'
+                continue
+    ou['error'] = 0
+    return ou
 
 def gstat_clear(userId):
     stat = dict()
@@ -837,8 +892,6 @@ def moveTaskFromRedistoDB():
             logger.error('write task to DB Fail!')
         rv = crack.hashDel(task, *task_dict.keys())
         logger.info('clear task(%s) rv(%d)', task, rv)
-
-
 
 def updateTaskCKReq(taskID):
     '''
