@@ -178,8 +178,8 @@ def _getCKByIP(ip,usid):
     Return:
         record: ck记录表项 or None or False(运行出错)
     '''
-    
-    sql = libdb.LibDB().query_one('lastip', ip, CONF['database']['cktb'])
+    condition = " lastip='%s' and effective=1 " %(ip)
+    sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
         return False
@@ -243,8 +243,7 @@ def _getCKByPostCode(ip, usid, postCode):
         logger.error('ip(%s) or postCode(%s) null', ip, postCode)
         return None
     timestamp = int(time.time())
-    #condition = "postcode='%s' and colddate<%d limit 1" %(postCode, timestamp)
-    condition = "postcode='%s' order by colddate asc limit 10" %(postCode)
+    condition = "postcode='%s' and effective=1 order by colddate asc limit 10" %(postCode)
     sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
