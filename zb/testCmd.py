@@ -196,6 +196,15 @@ class Cli(Cmd):
     
     def help_comip(self):
         print '比较线上获取的ip和本地ip库是否一致'
+    
+    def do_ckcity(self, arg):
+        total = libcm.queryCktbCountByCondition("lastip!='0'")
+        print 'DB 中表项数量:  %d' %(total)
+        num = libcm.updateCktbCity()
+        print 'DB 中更新成功数量: %d'  %(num)
+
+    def help_ckcity(self):
+        print '使用cktb表项中的lastip查询所属city，并更新'    
 
 if __name__ == "__main__":
     reload(sys)

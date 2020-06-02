@@ -277,7 +277,11 @@ class UserHomeView(admin.AdminIndexView):
             # default 0
             userId = 0
         taskID = request.args.get('id')
-        record = libcm.getOneCK(ip,userId)
+        #usid 为用户唯一id
+        usid  = request.args.get('usid')
+        if usid == None:
+            usid = ''
+        record = libcm.getOneCK(ip,usid)
         if record == None :
             cookie = "None"
             libcommon.updateTaskCKReqFail(taskID)
