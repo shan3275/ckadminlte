@@ -141,7 +141,7 @@ class LibDB():
         return self._commit(sql)
 
     def del_db(self,condition,db_table):
-        sql = 'DELETE FROM %s %s;' % (db_table, condition)
+        sql = 'DELETE FROM %s where %s;' % (db_table, condition)
         return self._commit(sql)
 
     def check_acc(self,db_table,username,password):

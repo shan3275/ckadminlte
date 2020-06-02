@@ -298,6 +298,17 @@ class UserHomeView(admin.AdminIndexView):
         # logger.debug(rep)
         return jsonify(rep)
 
+    @admin.expose('/notify', methods=['GET'])
+    def notify(self):
+        #usid 为用户唯一id
+        usid  = request.args.get('usid')
+        if usid == None:
+            usid = ''
+        rep = libcm.delOneCKbyUsid(usid)
+        # logger.debug(rep)
+        return jsonify(rep)
+
+
     @admin.expose('/submit_task', methods=['POST', 'GET'])
     def submit_task(self):
         global g_stat

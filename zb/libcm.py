@@ -386,6 +386,54 @@ def getOneCK(ip,usid):
     logger.info(record)
     return record
 
+
+def _delCKByUsid(usid):
+    '''
+        通过查询usid，获取一条ck记录
+    Args:
+        usid:  用户id，唯一码
+    Return:
+        dict(error=0, msg='')
+    '''
+    ou = dict(error=0, msg='ok')
+    sql = libdb.LibDB().query_one('token', usid, CONF['database']['cktb'])
+    if  sql == False : #查询失败
+        logger.error('get ck by lastip 读数据库失败')
+        ou['error'] = 1
+        ou['msg']   = 'query ck fail!'
+        return ou
+    elif sql :   #查询成功
+        logger.info(sql);
+        condition = "id=%d" %(sql[0])
+        setval    =  "effective=0"
+        logger.debug('condition:%s', condition)
+        rv =  libdb.LibDB().update_db(setval,condition, CONF['database']['cktb'])
+        if rv == False:
+            logger.error('更新ck表冷却时间失败')
+            ou['error'] = 1
+            ou['msg']   = 'del ck fail!'
+            return ou
+        return ou  #成功
+    ou['error'] = 1
+    ou['msg']   = 'usid no existed'
+    return ou    
+
+def delOneCKbyUsid(usid):
+    '''
+    根据usid 从mysql数据库cktb表项中删除一条cookie
+    Args:
+        usid:   用户唯一ID 
+    return :
+        dict(error=0, msg='')
+    '''  
+    ou = dict(error=0, msg='ok')
+    if len(usid) != 32:
+        ou['error'] = 1
+        ou['msg']   = 'usid length not match!' 
+        return ou
+    ou = _delCKByUsid(usid)
+    return ou
+
 def _now():
     return time.strftime("%m-%d %H:%M:%S", time.localtime())
 
