@@ -18,6 +18,7 @@ import globalvar as gl
 
 global logger
 global CONF
+global db 
 
 def getIPAreaOnline(ip):
     '''
@@ -169,37 +170,23 @@ def _getIPAreaID(ip):
 
     return postCode
 
-def _getCKByIP(ip,usid):
+def _getIPArea(ip):
     '''
-        通过查询ip，获取一条ck记录
+    查询ip的区域，使用本地离线库进行查询
     Args:
-        ip:  IP地址
-        usid: 更新usid
+        ip:    请求的IP
     Return:
-        record: ck记录表项 or None or False(运行出错)
+        area:    false 为失败,否则为city 或者province
     '''
-    condition = " lastip='%s' and effective=1 " %(ip)
-    sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
-    if  sql == False : #查询失败
-        logger.error('get ck by lastip 读数据库失败')
-        return False
-    elif sql :   #查询成功
-        #logger.info(sql);
-        timestamp = int(time.time())
-        if len(usid) == 32:
-            setval = "colddate=%d,token='%s'" %(timestamp+CONF['ckcoldtime'], usid)
-        else:
-            setval = "colddate=%d" %(timestamp+CONF['ckcoldtime'])
-        condition = "id=%d" %(sql[0])
-        logger.debug('setval:%s, condition:%s', setval, condition)
-        rv =  libdb.LibDB().update_db(setval, condition, CONF['database']['cktb'])
-        if rv == False:
-            logger.error('更新ck表冷却时间失败')
-            return False
-        record  =dict()
-        record['cookie'] = sql[11]
-        return record  #成功
-    return None
+    #首先查询本地ip库
+    localArea = db.find_map(ip, "CN")
+    #更新进入表项
+    if localArea['city_name'] != '':
+        area = localArea['city_name']
+    else:
+        area = localArea['region_name']
+
+    return area
 
 def _getCKByUsid(usid):
     '''
@@ -209,8 +196,6 @@ def _getCKByUsid(usid):
     Return:
         record: ck记录表项 or None or False(运行出错)
     '''
-    if len(usid) != 32:
-        return None
     condition = " token='%s' and effective=1 " %(usid)
     sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
@@ -255,10 +240,7 @@ def _getCKByPostCode(ip, usid, postCode):
         colddate = sql[8]
         logger.info('冷却时间：%d',colddate)
         if colddate <= timestamp: #冷却时间已经过了，可以使用
-            if len(usid) == 32:
-                setval = "colddate=%d,lastip='%s',token='%s'" %(timestamp+CONF['ckcoldtime'], ip, usid)
-            else:
-                setval = "colddate=%d,lastip='%s'" %(timestamp+CONF['ckcoldtime'], ip)
+            setval = "colddate=%d,lastip='%s',token='%s'" %(timestamp+CONF['ckcoldtime'], ip, usid)
             condition = "id=%d" %(sql[0])
             logger.debug('setval:%s, condition:%s', setval, condition)
             rv =  libdb.LibDB().update_db(setval, condition, CONF['database']['cktb'])
@@ -271,6 +253,42 @@ def _getCKByPostCode(ip, usid, postCode):
     
     return None    
 
+def _getCKByArea(ip, usid, area):
+    '''
+    获取一条ck记录,从mysql中
+    Args:
+        ip:         IP地址
+        usid:       用户唯一ID
+        area:       区域信息，city或者province
+    Return:
+        record: ck记录表项 or None or False
+    '''
+    if ip == '' or area == '':
+        logger.error('ip(%s) or area(%s) null', ip, area)
+        return None
+    timestamp = int(time.time())
+    condition = "area='%s' and effective=1 order by colddate asc limit 10" %(area)
+    sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
+    if  sql == False : #查询失败
+        logger.error('get ck by lastip 读数据库失败')
+        return False
+    elif sql :   #查询成功
+        logger.info(sql);
+        colddate = sql[8]
+        logger.info('冷却时间：%d',colddate)
+        if colddate <= timestamp: #冷却时间已经过了，可以使用
+            setval = "colddate=%d,lastip='%s',token='%s'" %(timestamp+CONF['ckcoldtime'], ip, usid)
+            condition = "id=%d" %(sql[0])
+            logger.debug('setval:%s, condition:%s', setval, condition)
+            rv =  libdb.LibDB().update_db(setval, condition, CONF['database']['cktb'])
+            if rv == False:
+                logger.error('更新ck表冷却时间失败')
+                return False
+            record  =dict()
+            record['cookie'] = sql[11]
+            return record  #成功
+    
+    return None   
 
 def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
     '''
@@ -284,27 +302,16 @@ def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
     '''
     #获取redis中ck 键值
     crack = libredis.LibRedis(CONF['redis']['cktbdb'])
-    if CONF['random'] == True:
-        num = crack.setCard(CONF['redis']['live'])
-        if num == 0:
-            logger.info('cookie has used over, fecth record fail')
-            return None
+    num = crack.setCard(CONF['redis']['live'])
+    if num == 0:
+        logger.info('cookie has used over, fecth record fail')
+        return None
 
-        nickname = crack.setSpop(CONF['redis']['live'])
-        if nickname == None:
-            logger.error('fetch record get nickname null!!')
-            return None
-    else:
-        num = crack.listLLen(CONF['redis']['live'])
-        if num == 0:
-            logger.info('cookie has used over, fecth record fail')
-            return None
-
-        nickname = crack.listLPop(CONF['redis']['live'])
-        if nickname == None:
-            logger.error('fetch record get nickname null!!')
-            return None
-
+    nickname = crack.setSpop(CONF['redis']['live'])
+    if nickname == None:
+        logger.error('fetch record get nickname null!!')
+        return None
+    
     #获取cookie
     record = crack.hashGetAll(nickname)
     if record == None:
@@ -324,18 +331,11 @@ def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
         return None
     if sql == None:
         timestamp = int(time.time())
-        if len(usid) == 32:
-            key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, postcode, token"
-            value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s'" \
+        key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, postcode, token"
+        value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s'" \
                             %(record['nickname'], record['password'], 'G0', \
                             timestamp, timestamp,timestamp+CONF['ckcoldtime'], \
                             record['cookie'], ip, postCode,usid)
-        else:
-            key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, postcode"
-            value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s'" \
-                            %(record['nickname'], record['password'], 'G0', \
-                            timestamp, timestamp,timestamp+CONF['ckcoldtime'], \
-                            record['cookie'], ip, postCode)            
         logger.debug('key:%s, value:%s', key, value)
         rv = libdb.LibDB().insert_db(key, value, CONF['database']['cktb'])
         if rv != True:
@@ -350,6 +350,69 @@ def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
         logger.info('从redis中删除一条ck成功')
 
     return record     
+
+
+def _getOneCKFromRedisAndWriteInfoToDB(ip,usid, area):
+    '''
+    从Redis中获取一条ck，添加ip、冷却时间、区域信息，插入mysql
+    Args:
+        ip:         IP地址
+        usid:       用户唯一ID
+        area:       区域信息
+    Return:
+        record: ck记录表项 or None or False    
+    '''
+    #获取redis中ck 键值
+    crack = libredis.LibRedis(CONF['redis']['cktbdb'])
+    num = crack.setCard(CONF['redis']['live'])
+    if num == 0:
+        logger.info('cookie has used over, fecth record fail')
+        return None
+
+    nickname = crack.setSpop(CONF['redis']['live'])
+    if nickname == None:
+        logger.error('fetch record get nickname null!!')
+        return None
+    
+    #获取cookie
+    record = crack.hashGetAll(nickname)
+    if record == None:
+        logger.error('cookie record not existed nickname:%s', nickname)
+        return None
+    
+    if record.has_key('nickname') == False:
+        logger.info(nickname)
+        logger.error('redis ck record no exist nickname, error!')
+        logger.info(record)
+        return None
+    ##插入ck到mysql中
+    #写入数据库
+    sql = libdb.LibDB().query_one('nickname', record['nickname'], CONF['database']['table'])
+    if sql == False:
+        logger.error('查询 ck失败')
+        return None
+    if sql == None:
+        timestamp = int(time.time())
+        key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, area, token"
+        value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s'" \
+                            %(record['nickname'], record['password'], 'G0', \
+                            timestamp, timestamp,timestamp+CONF['ckcoldtime'], \
+                            record['cookie'], ip, area,usid)
+        logger.debug('key:%s, value:%s', key, value)
+        rv = libdb.LibDB().insert_db(key, value, CONF['database']['cktb'])
+        if rv != True:
+            logger.error('CK 插入mysql失败')
+            return None
+    else:
+        logger.error('redis 和 mysql 中同时存在记录，请关注')
+        return None
+    
+    #删除redis中已经去除的ck
+    if crack.delete(nickname) :
+        logger.info('从redis中删除一条ck成功')
+
+    return record   
+
 
 def getOneCK(ip,usid):
     '''
@@ -368,26 +431,49 @@ def getOneCK(ip,usid):
     elif record != None:
         return record
      
-    # 2.没有记录，则获取IP归属地
-    postCode = _getIPAreaID(ip)
-    if postCode == False :
-        return None
-    
-    if postCode == '':
-        logger.error('postCode is null')
-        return None
-      
-    
-    # 3.根据邮编查询ck记录
-    record = _getCKByPostCode(ip, usid, postCode)
-    if record == False:
-        return None
-    elif record != None:
-        return record
+    if CONF['localipdb']  == False:
+        # 2.没有记录，则获取IP归属地
+        postCode = _getIPAreaID(ip)
+        if postCode == False :
+            return None
+        
+        if postCode == '':
+            logger.error('postCode is null')
+            return None
+        
+        
+        # 3.根据邮编查询ck记录
+        record = _getCKByPostCode(ip, usid, postCode)
+        if record == False:
+            return None
+        elif record != None:
+            return record
 
-    # 4. 从redis中取出一条空记录（redis中存放的都是空记录）
-    record = _getOneCKFromRedisAndWriteToDB(ip,usid, postCode)
-    logger.info(record)
+        # 4. 从redis中取出一条空记录（redis中存放的都是空记录）
+        record = _getOneCKFromRedisAndWriteToDB(ip,usid, postCode)
+        logger.info(record)
+
+    else:
+        # 2.没有记录，则获取IP归属地
+        area = _getIPArea(ip)
+        if area == False :
+            return None
+        
+        if area == '':
+            logger.error('area is null')
+            return None
+        
+        # 3.根据区域查询ck记录
+        record = _getCKByArea(ip, usid, area)
+        if record == False:
+            return None
+        elif record != None:
+            return record
+        
+        # 4. 从redis中取出一条记录（redis中存放的都是空记录）
+        record = _getOneCKFromRedisAndWriteInfoToDB(ip, usid, area)
+        logger.info(record)
+
     return record
 
 
@@ -685,7 +771,6 @@ def updateCktbCity():
     '''
     根据cktb表项中的lastip，查询本地ip库，得到所属地的city，将city写入表项
     '''
-    db = ipdb.City(CONF['ipdb'])
     num = 0
     #使用分页查询
     page_size = 1000
@@ -710,9 +795,9 @@ def updateCktbCity():
             localArea = db.find_map(lastip, "CN")
             #更新进入表项
             if localArea['city_name'] != '':
-                setval = "city='%s'" %(localArea['city_name'])
+                setval = "area='%s'" %(localArea['city_name'])
             else:
-                setval = "city='%s'" %(localArea['region_name'])
+                setval = "area='%s'" %(localArea['region_name'])
             condition1 = "id=%s" %(id)
             logger.debug('setval:%s, condition:%s', setval, condition1)
             if libdb.LibDB().update_db(setval, condition1, CONF['database']['cktb']) :
@@ -721,3 +806,4 @@ def updateCktbCity():
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()
+db = ipdb.City(CONF['ipdb'])

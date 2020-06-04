@@ -98,10 +98,8 @@ class MyHomeView(admin.AdminIndexView):
         g_stat['could_use'] = Digit
         #获取redis中ck数量
         crack = libredis.LibRedis(CONF['redis']['cktbdb'])
-        if CONF['random'] == True:
-            num = crack.setCard(CONF['redis']['live'])
-        else:
-            num = crack.listLLen(CONF['redis']['live'])
+        num = crack.setCard(CONF['redis']['live'])
+
         g_stat['unused'] = num
         return self.render('stradmin/index.html',  g_stat=g_stat)
 

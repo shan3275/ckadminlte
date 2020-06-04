@@ -239,7 +239,6 @@ def takeOutCksByTimeStampRange(timestampBegin, timestampEnd):
     return records
 
 def writeRecordsToRedis(records, userId):
-
     if records == None or len(records) == 0:
         return
 
@@ -253,44 +252,19 @@ def writeRecordsToRedis(records, userId):
         if rv != True:
             logger.info('write to redis fail %s', record)
         ##写入集合和写入列表二选一
-        if CONF['random'] == True:
-            # ck名称集合，写入redis，集合为无序集合
-            rv = crack.setAdd(CONF['redis']['const'], record['nickname'])
-            if rv != True:
-                logger.info('repeat,write ck nickanme set to redis fail')
-        else:
-            #ck名称列表，写入redis，列表元素可以重复
-            rv = crack.listLPush(CONF['redis']['const'], record['nickname'])
-            if rv <= 0:
-                logger.error('write ck nickname to redis const list fail!!')
-
-    if CONF['random'] != True:
-        logger.info('write ck nickname to redis const list success')
-
+        # ck名称集合，写入redis，集合为无序集合
+        rv = crack.setAdd(CONF['redis']['const'], record['nickname'])
+        if rv != True:
+            logger.info('repeat,write ck nickanme set to redis fail')
 
     # 将cknnsetconst 复制一份，作为获取ck时的中间变量。
-    if CONF['random'] == True:
-        rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
-        if rv == 0:
-            logger.info('copy ck nickname set fail')
-    else:
-        num = crack.delete(CONF['redis']['live'])
-        logger.info('redis delete(%d) live list num=%d', userId, num)
-
-        const = crack.listLRange(CONF['redis']['const'],0,-1)
-        if len(const) == 0:
-            logger.error('redist const list is null')
-        rv = crack.listRPush(CONF['redis']['live'], *const)
-        if rv <= 0:
-            logger.error('write ck nickname to redis(%d) live list fail!!',userId)
-        else:
-            logger.info('write ck nickname to redis(%d) live list success, %d', userId,rv)
-
+    rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
+    if rv == 0:
+        logger.info('copy ck nickname set fail')
+    
     # 更新g_stat total  变量
-    if CONF['random'] == True:
-        Digit = crack.setCard(CONF['redis']['const'])
-    else:
-        Digit = crack.listLLen(CONF['redis']['const'])
+    Digit = crack.setCard(CONF['redis']['const'])
+ 
     crack.hashSet('g_stat', 'total', Digit)
     logger.info('更新 redis g_stat total success!')
 
@@ -389,26 +363,15 @@ def writeFileToRedis(file,userId):
 
 def fetch_record_from_redis(ip, userId):
     crack = libredis.LibRedis(userId)
-    if CONF['random'] == True:
-        num = crack.setCard(CONF['redis']['live'])
-        if num == 0:
-            logger.info('cookie has used over, fecth record fail,userid:%d',userId)
-            return None
+    num = crack.setCard(CONF['redis']['live'])
+    if num == 0:
+        logger.info('cookie has used over, fecth record fail,userid:%d',userId)
+        return None
 
-        nickname = crack.setSpop(CONF['redis']['live'])
-        if nickname == None:
-            logger.error('fetch record get nickname null!!')
-            return None
-    else:
-        num = crack.listLLen(CONF['redis']['live'])
-        if num == 0:
-            logger.info('cookie has used over, fecth record fail,userid:%d', userId)
-            return None
-
-        nickname = crack.listLPop(CONF['redis']['live'])
-        if nickname == None:
-            logger.error('fetch record get nickname null!!')
-            return None
+    nickname = crack.setSpop(CONF['redis']['live'])
+    if nickname == None:
+        logger.error('fetch record get nickname null!!')
+        return None
 
     user = dict(nickname=nickname,loc='',fts=now(),cnt=1)
     rv   = crack.hashMSet(ip,user)
@@ -462,23 +425,14 @@ def writeOneCkRecordToRedis(record, userId):
     if rv != True:
         logger.info('write to redis fail %s', record)
         return False
-    ##写入集合和写入列表二选一
-    if CONF['random'] == True:
-        # ck名称集合，写入redis，集合为无序集合
-        rv = crack.setAdd(CONF['redis']['live'], record['nickname'])
-        if rv != True:
-            logger.error('repeat,write ck nickanme set to redis fail')
-            return False
-        else:
-            logger.info('write ck nickname to set success!')
+    # ck名称集合，写入redis，集合为无序集合
+    rv = crack.setAdd(CONF['redis']['live'], record['nickname'])
+    if rv != True:
+        logger.error('repeat,write ck nickanme set to redis fail')
+        return False
     else:
-        #ck名称列表，写入redis，列表元素可以重复
-        rv = crack.listLPush(CONF['redis']['live'], record['nickname'])
-        if rv <= 0:
-            logger.error('write ck nickname to redis live list fail!!')
-            return False
-        else:
-            logger.info('write ck nickname to list success!')
+        logger.info('write ck nickname to set success!')
+
     
     return True
 
@@ -557,23 +511,9 @@ def reset_records(userId):
             logger.info('reset user(%s) hash rv(%d)', ip,rv)
 
     #将cknnsetconst 复制一份，作为获取ck时的中间变量。
-    if CONF['random'] == True:
-        rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
-        if rv == 0:
-            logger.info('copy ck nickname set fail')
-    else:
-        num = crack.delete(CONF['redis']['live'])
-        logger.info('redis delete(%d) live list num=%d', userId, num)
-
-        const = crack.listLRange(CONF['redis']['const'],0,-1)
-        if len(const) == 0:
-            logger.error('redist const list is null')
-            return CNT
-        rv = crack.listRPush(CONF['redis']['live'], *const)
-        if rv <= 0:
-            logger.error('write ck nickname to redis(%d) live list fail!!',userId)
-        else:
-            logger.info('write ck nickname to redis(%d) live list success, %d', userId,rv)
+    rv = crack.setSunionstore(CONF['redis']['live'], CONF['redis']['const'])
+    if rv == 0:
+        logger.info('copy ck nickname set fail')
 
     logger.info("%d records reset." ,CNT)
 
@@ -587,41 +527,23 @@ def clear_records(userId):
     CNT = 0
     crack = libredis.LibRedis(userId)
     ##使用随机方式，索引存储在无序集合中
-    if CONF['random'] == True:
-        while crack.setCard(CONF['redis']['const']) > 0:
-            nickname = crack.setSpop(CONF['redis']['const'])
-            if nickname != None:
-                record = crack.hashGetAll(nickname)
-                if record == None:
-                    continue
-                CNT += 1
-                rv = crack.hashDel(nickname, *record.keys())
-                logger.info('clear nickname(%s) cookie hash rv(%d)', nickname, rv)
+    while crack.setCard(CONF['redis']['const']) > 0:
+        nickname = crack.setSpop(CONF['redis']['const'])
+        if nickname != None:
+            record = crack.hashGetAll(nickname)
+            if record == None:
+                continue
+            CNT += 1
+            rv = crack.hashDel(nickname, *record.keys())
+            logger.info('clear nickname(%s) cookie hash rv(%d)', nickname, rv)
 
-        while crack.setCard(CONF['redis']['live']) > 0:
-            nickname = crack.setSpop(CONF['redis']['live'])
-            if nickname != None:
-                logger.info('del redis live set: nickname(%s)', nickname)
+    while crack.setCard(CONF['redis']['live']) > 0:
+        nickname = crack.setSpop(CONF['redis']['live'])
+        if nickname != None:
+            logger.info('del redis live set: nickname(%s)', nickname)
 
-        #更新g_stat total  变量
-        Digit = crack.setCard(CONF['redis']['const'])
-    ##使用顺序模式，索引存储在列表中
-    else:
-        while crack.listLLen(CONF['redis']['const']) > 0:
-            nickname = crack.listLPop(CONF['redis']['const'])
-            if nickname != None:
-                record = crack.hashGetAll(nickname)
-                if record == None:
-                    continue
-                CNT += 1
-                rv = crack.hashDel(nickname, *record.keys())
-                logger.info('clear nickname(%s) cookie hash rv(%d)', nickname, rv)
-
-        num = crack.delete(CONF['redis']['live'])
-        logger.info('redis delete(%d) live list num=%d', userId, num)
-
-        #更新g_stat total  变量
-        Digit = crack.listLLen(CONF['redis']['const'])
+     #更新g_stat total  变量
+    Digit = crack.setCard(CONF['redis']['const'])
 
     crack.hashSet('g_stat', 'total', Digit)
     logger.info("%d cookie records clean.", CNT)
