@@ -184,7 +184,7 @@ def _getCKByIP(ip,usid):
         logger.error('get ck by lastip 读数据库失败')
         return False
     elif sql :   #查询成功
-        logger.info(sql);
+        #logger.info(sql);
         timestamp = int(time.time())
         if len(usid) == 32:
             setval = "colddate=%d,token='%s'" %(timestamp+CONF['ckcoldtime'], usid)
@@ -209,13 +209,15 @@ def _getCKByUsid(usid):
     Return:
         record: ck记录表项 or None or False(运行出错)
     '''
-    
-    sql = libdb.LibDB().query_one('token', usid, CONF['database']['cktb'])
+    if len(usid) != 32:
+        return None
+    condition = " token='%s' and effective=1 " %(usid)
+    sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
         return False
     elif sql :   #查询成功
-        logger.info(sql);
+        #logger.info(sql);
         timestamp = int(time.time())
         setval = "colddate=%d" %(timestamp+CONF['ckcoldtime'])
         condition = "id=%d" %(sql[0])
@@ -356,8 +358,11 @@ def getOneCK(ip,usid):
         ip :    请求的IP
         usid:   用户唯一ID 
     '''
-    # 1.首先查询mysql中是否存在该ip的记录
-    record = _getCKByIP(ip,usid)
+    if len(usid) != 32:
+        return None
+    
+    # 1. 先查询mysql是是否存在唯一id的记录
+    record = _getCKByUsid(usid)
     if record == False:
         return None
     elif record != None:
