@@ -835,6 +835,21 @@ def updateTaskCKReqFail(taskID):
     else:
         logger.error('taskID is null, can not update task ck_req number!!!')
 
+def updateCheckCKReq():
+    '''
+    用户请求ck成功为空，在任务中加一
+    '''
+    crack = libredis.LibRedis(CONF['redis']['checkdb'])
+    crack.hashincr(CONF['redis']['check'],'ck_req')
+
+def updateCheckCKReqFail():
+    '''
+    用户请求ck成功为空，在任务中加一
+    '''
+    crack = libredis.LibRedis(CONF['redis']['checkdb'])
+    crack.hashincr(CONF['redis']['check'],'ck_req_fail')
+
+
 def dateRangeToTimeStamp(date_range):
     """
     02/20/2019 - 03/21/2019

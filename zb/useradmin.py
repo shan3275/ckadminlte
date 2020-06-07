@@ -277,6 +277,7 @@ class UserHomeView(admin.AdminIndexView):
             # default 0
             userId = 0
         taskID = request.args.get('id')
+        checkType = request.args.get('type')
         #usid 为用户唯一id
         usid  = request.args.get('usid')
         if usid == None:
@@ -284,14 +285,22 @@ class UserHomeView(admin.AdminIndexView):
         record = libcm.getOneCK(ip,usid)
         if record == None :
             cookie = "None"
-            libcommon.updateTaskCKReqFail(taskID)
         else:
             if record.has_key('cookie'):
                 cookie = record['cookie']
-                libcommon.updateTaskCKReq(taskID)
             else:
                 cookie = "None"
+        
+        if cookie == "None":
+            if checkType == "check":
+                libcommon.updateCheckCKReqFail()
+            else:
                 libcommon.updateTaskCKReqFail(taskID)
+        else:
+            if checkType == "check":
+                libcommon.updateCheckCKReq()
+            else:
+                libcommon.updateTaskCKReq(taskID)
 
         rep = {'ip': ip, 'cookie': cookie}
 

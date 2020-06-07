@@ -24,8 +24,10 @@
             <div class="col-lg-3 col-xs-6">
                 <small>
                     <li>DB中共有 {{ g_stat['total'] }} 个CK &nbsp; DB中可使用 {{ g_stat['could_use'] }} 个CK</li>
+                    <li>DB中有 {{ g_stat['uneffective'] }} 个无效CK</li>                    
                     <li>缓存中未用 {{ g_stat['unused'] }} 个CK </li>
                     <li>总计可使用 {{ g_stat['unused'] + g_stat['could_use'] }} 个CK </li>
+                    <li>检查成功请求： {{ g_stat['check_req'] }},&nbsp 失败请求：{{ g_stat['check_req_fail'] }} </li>
                     </br>
                     <li>启动时间：{{ g_stat['boot_ts'] }} </li>
                 </small>

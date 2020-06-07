@@ -27,6 +27,7 @@ import globalvar as gl
 import libdb as libdb
 import libredis as libredis
 import libcommon as libcommon
+import libcm as libcm
 import time
 
 global logger
@@ -80,27 +81,7 @@ def TakeOutCksFromDB(cks_num):
 class MyHomeView(admin.AdminIndexView):
     @admin.expose('/')
     def index(self):
-        global g_stat
-        # 获取表项数量
-        count = libdb.LibDB().query_count(CONF['database']['cktb'])
-        if count != False:
-            Digit = count[0]
-        else:
-            Digit = '0'
-        g_stat['total'] = Digit
-        timestamp = int(time.time())
-        conditions = 'colddate < %d' % (timestamp)
-        count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['cktb'])
-        if count != False:
-            Digit = count[0]
-        else:
-            Digit = '0'
-        g_stat['could_use'] = Digit
-        #获取redis中ck数量
-        crack = libredis.LibRedis(CONF['redis']['cktbdb'])
-        num = crack.setCard(CONF['redis']['live'])
-
-        g_stat['unused'] = num
+        g_stat = libcm.getGstatInfo()
         return self.render('stradmin/index.html',  g_stat=g_stat)
 
     @admin.expose('/download', methods=['POST'])

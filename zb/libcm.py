@@ -180,6 +180,8 @@ def _getIPArea(ip):
     '''
     #首先查询本地ip库
     localArea = db.find_map(ip, "CN")
+    logger.info(localArea)
+    
     #更新进入表项
     if localArea['city_name'] != '':
         area = localArea['city_name']
@@ -774,7 +776,7 @@ def updateCktbCity():
     num = 0
     #使用分页查询
     page_size = 1000
-    condition = " lastip!='0' "
+    condition = " lastip!='0' and area='0'"
     total = queryCktbCountByCondition(condition)
     if total == 0:
         return num
@@ -803,6 +805,68 @@ def updateCktbCity():
             if libdb.LibDB().update_db(setval, condition1, CONF['database']['cktb']) :
                 num += 1
     return num
+
+def getGstatInfo():
+    '''
+    获取一些全局信息，传递给页面展示
+    return:
+        g_stat:   dict(total=, could_use=,unused=,)
+    '''
+    g_stat=dict()
+
+    #获取mysql中ck数量
+    count = libdb.LibDB().query_count(CONF['database']['cktb'])
+    if count != False:
+        Digit = count[0]
+    else:
+        Digit = '0'
+    g_stat['total'] = Digit
+
+    #获取mysql中ck可用数量
+    timestamp = int(time.time())
+    conditions = 'colddate < %d and effective=1' % (timestamp)
+    count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['cktb'])
+    if count != False:
+        Digit = count[0]
+    else:
+        Digit = '0'
+    g_stat['could_use'] = Digit
+
+    #获取mysql中ck无效数量
+    conditions = 'effective=0'
+    count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['cktb'])
+    if count != False:
+        Digit = count[0]
+    else:
+        Digit = '0'
+    g_stat['uneffective'] = Digit
+
+    #获取redis中ck数量
+    crack = libredis.LibRedis(CONF['redis']['cktbdb'])
+    num = crack.setCard(CONF['redis']['live'])
+    g_stat['unused'] = num
+
+    #获取check统计数量
+    crack = libredis.LibRedis(CONF['redis']['checkdb'])
+    check = crack.hashGetAll(CONF['redis']['check'])
+    if check == None:
+        logger.error('not existed check:%s', CONF['redis']['check'])
+        g_stat['check_req']      = '0'
+        g_stat['check_req_fail'] = '0'
+    
+    if check.has_key('ck_req') == False:
+        g_stat['check_req']      = '0'
+        logger.error('redis check record no exist ck_req, error!')
+    else:
+        g_stat['check_req']      = check['ck_req']
+
+    if check.has_key('ck_req_fail') == False:
+        g_stat['check_req_fail']      = '0'
+        logger.error('redis check record no exist ck_req_fail, error!')
+    else:
+        g_stat['check_req_fail']      = check['ck_req_fail']
+
+    return g_stat
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()
