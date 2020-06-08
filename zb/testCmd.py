@@ -204,7 +204,7 @@ class Cli(Cmd):
         print 'DB 中更新成功数量: %d'  %(num)
 
     def help_ckcity(self):
-        print '使用cktb表项中的lastip查询所属city，并更新'    
+        print '使用cktb表项中的lastip查询所属本地IP库获得city，并更新到cktb中' 
 
 if __name__ == "__main__":
     reload(sys)

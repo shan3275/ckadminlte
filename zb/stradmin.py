@@ -22,6 +22,8 @@ import time
 
 import datetime
 import urllib
+import urlparse
+from urllib import urlencode
 import random
 import globalvar as gl
 import libdb as libdb
@@ -227,6 +229,100 @@ class AdminTaskView(admin.BaseView):
 
 #admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task'))
 admin_bp.add_view(AdminTaskView(name='任务列表',endpoint='task',category='任务'))
+
+def urlAddPara(url, params):
+    """
+    给url增加参数，拼装新的链接
+    :param url: 带参数，或者不带
+    :param params: 字典形式 {'lang':'en','tag':'python'}
+    :return:
+    """
+    url_parts = list(urlparse.urlparse(url))
+    query = dict(urlparse.parse_qsl(url_parts[4]))
+    query.update(params)
+
+    url_parts[4] = urlencode(query)
+
+    return urlparse.urlunparse(url_parts)
+
+# Create custom admin view
+class UserTaskView(admin.BaseView):
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
+    @admin.expose('/')
+    def index(self):
+        userIdStr = request.args.get('user')
+        if userIdStr != None:
+            userId = int(userIdStr)
+        else:
+            refer = request.referrer
+            if refer == None:
+                userId = 0
+            else:
+                para_str = urlparse.urlsplit(refer).query
+                param = urlparse.parse_qs(para_str)
+                logger.info(param)
+                if param.has_key('user'):
+                    para_dict = dict(user=param['user'][0])
+                else:
+                    para_dict = dict(user='0')
+                logger.info(para_dict)
+                url = urlAddPara(request.url, para_dict)
+                return redirect(url)
+
+        tasks = libcommon.getUserTaskList(userId)
+        if not tasks:
+            task = dict()
+            task['room_url'] = 'https://www.douyu.com/657158'
+            task['total_time'] = '30'
+            task['user_num'] = '10000'
+            task['last_time_from'] = 23
+            task['last_time_to'] = 25
+            task['time_gap'] = 6
+            task['gap_num'] = 100
+            task['task_id'] = 'user100001'
+        else:
+            task = tasks[0]
+        return self.render('stradmin/usertask.html',task_records=task, user=userId)
+
+    @admin.expose('/submit_task', methods=['POST', 'GET'])
+    def submit_task(self):
+        global g_stat
+        if request.method == 'POST':
+            room_url = request.form.get('room_url')
+            ck_url = request.form.get('ck_url')
+            begin_time = request.form.get('begin_time')
+            total_time = request.form.get('total_time')
+            user_num = request.form.get('user_num')
+            last_time_from = request.form.get('last_time_from')
+            last_time_to = request.form.get('last_time_to')
+            time_gap = request.form.get('time_gap')
+            gap_num = request.form.get('gap_num')
+            userIdStr = request.args.get('user')
+            if userIdStr != None:
+                userId = int(userIdStr)
+            else:
+                # default 0
+                userId = 0
+            logger.debug('room_url: %s, ck_url: %s', room_url, ck_url)
+            logger.debug('begin_time: %s, total_time:%s', begin_time, total_time)
+            logger.debug('user_num: %s', user_num)
+            logger.debug('last_time_from:%s, last_time_to:%s', last_time_from, last_time_to)
+            logger.debug('time_gap:%s, gap_num:%s', time_gap, gap_num)
+            libcommon.writeTaskToRedis(userId, room_url, ck_url, begin_time, total_time, \
+                                       user_num, last_time_from, last_time_to, time_gap, gap_num)
+        return redirect(url_for('task.index'))
+
+    @admin.expose('/new/', methods=('GET', 'POST'))
+    def create_view(self):
+        # render your view here
+        return "Hello"    
+
+admin_bp.add_view(UserTaskView(name='创建任务',endpoint='createtask',category='任务' ))
 
 admin_db_bp = SQLAlchemy()
 db = admin_db_bp
@@ -776,9 +872,8 @@ class CreateTaskView(admin.BaseView):
                 logger.debug('task_min:%d, cur_min:%d, cur_time_s=%s' %(task_min, cur_min, cur_time_s))
         return redirect(url_for('task.index'))
 
-    
+#admin_bp.add_view(CreateTaskView(name='创建任务',endpoint='createtask',category='任务' ))
 
-admin_bp.add_view(CreateTaskView(name='创建任务',endpoint='createtask',category='任务' ))
 
 # Role
 # Define models
