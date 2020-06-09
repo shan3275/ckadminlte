@@ -21,121 +21,103 @@ class LibDB():
                                     password=CONF['database']['passwd'],
                                     database=CONF['database']['db'],
                                     charset='utf8')
-        self.curg = self.cong.cursor()
+        self.curg = ''
+
 
     def __del__(self):
-        self.curg.close()
-        self.cong.close()
+        while True:
+            try:
+                with self.cong.cursor() as self.curg:
+                    self.curg.close()
+                self.cong.close()
+                break
+            except Exception:
+                self.cong.ping(True)  
+                        
+    def _fetchone(self,sql):
+        logger.info("%s",sql)
+        while True:
+            try:
+                with self.cong.cursor() as self.curg:
+                    self.curg.execute(sql)
+                    sql_rows = self.curg.fetchone()
+                    logger.debug('query_count: %s', sql_rows)
+                break;
+            except Exception:
+                self.cong.ping(True)
+        return sql_rows    
+
+    def _fetchall(self,sql):
+        logger.info("%s",sql)
+        while True:
+            try:
+                with self.cong.cursor() as self.curg:
+                    self.curg.execute(sql)
+                    sql_rows = self.curg.fetchall()
+                    logger.debug('query_count: %s', sql_rows)
+                break;
+            except Exception:
+                self.cong.ping(True)            
+        logger.debug(sql_rows)
+        return sql_rows       
+
+    def _commit(self,sql):
+        logger.info("%s",sql)
+        while True:
+            try:
+                with self.cong.cursor() as self.curg:
+                    self.curg.execute(sql)
+                self.cong.commit()
+                break;
+            except Exception:
+                self.cong.ping(True)            
+
+        logger.info('写入一条cookie进入数据库')
+        return True         
 
     def query_count(self,db_table):
         sql = "select count(*) from %s" % (db_table)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchone()
-            logger.debug('query_count: %s', sql_rows)
-        except:
-            logger.exception('Insert operation error')
-            return False
-
-        return sql_rows
+        return self._fetchone(sql)
 
     def query_count_by_condition(self,condition, db_table):
         sql = "select count(*) from %s where %s" % (db_table, condition)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchone()
-            logger.debug('query_count: %s', sql_rows)
-        except:
-            logger.exception('Insert operation error')
-            return False
-
-        return sql_rows
+        return self._fetchone(sql)
 
     def query_num(self, num, db_table):
         sql = "select * from %s limit %d" % (db_table, num)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchall()
-        except:
-            logger.exception('Insert operation error')
-            return False
-        logger.debug(sql_rows)
-
-        return sql_rows
+        return self._fetchall(sql)
 
     def query_num_by_condition(self, num,condition, db_table):
         sql = "select * from %s  where %s limit %d" % (db_table, condition, num)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchall()
-        except:
-            logger.exception('Insert operation error')
-            return False
-        logger.debug(sql_rows)
+        return self._fetchall(sql)
 
-        return sql_rows
+    def query(self,  db_table):
+        sql = "select * from %s" % (db_table)
+        return self._fetchall(sql)
 
     def query_all(self, key, value, db_table):
         sql = "select * from %s where %s='%s'" % (db_table, key, value)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchall()
-        except:
-            logger.exception('Insert operation error')
-            return False
-
-        return sql_rows
+        return self._fetchall(sql)
 
     def query_all_by_condition(self, sql):
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchall()
-        except:
-            logger.exception('Insert operation error')
-            return False
-
-        return sql_rows
+        return self._fetchall(sql)
 
     def query_by_condition(self, condition, db_table):
         sql = "select * from %s where %s" % (db_table, condition)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            sql_rows = self.curg.fetchall()
-        except:
-            logger.exception('Insert operation error')
-            return False
+        return self._fetchall(sql)
 
-        return sql_rows
+    def query_by_id(self, id_str, db_table):
+        sql = "select * from %s where id=%s" %(db_table, id_str)
+        return self._fetchone(sql)
 
     def query_one(self, key, value, db_table):
         sql = "select * from %s where %s='%s'" %(db_table, key, value)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            info = self.curg.fetchone()
-        except:
-            logger.exception('Insert operation error')
-            return False
-        return info
+        return self._fetchone(sql)
 
     def query_one_by_condition(self, condition, db_table):
-        sql = "select * from %s where %s order by rand()" %(db_table, condition)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            info = self.curg.fetchone()
-        except:
-            logger.exception('Insert operation error')
-            return False
-        logger.debug(type(info))
-        return info
+        sql = "select * from %s where %s" %(db_table, condition)
+        return self._fetchone(sql)
+
     def insert_db(self, key, value, db_table):
         """
         插入一条表项
@@ -144,16 +126,8 @@ class LibDB():
         :param db_table:
         :return:
         """
-        sql = 'INSERT INTO `%s` ( %s ) VALUES( %s );' %(db_table, key, value)
-        try:
-            self.curg.execute(sql)
-            self.cong.commit()
-        except:
-            logger.exception('Insert operation error')
-            return False
-
-        logger.info('写入一条cookie进入数据库')
-        return True
+        sql = 'INSERT INTO `%s` ( %s ) VALUES( %s )' %(db_table, key, value)
+        return self._commit(sql)
 
     def update_db(self, setval, condition,db_table):
         """
@@ -163,63 +137,33 @@ class LibDB():
         :param db_table: 表项名称
         :return:
         """
-        sql = "UPDATE %s set %s where %s;" % (db_table, setval, condition)
-        logger.debug(sql)
-        try:
-            self.curg.execute(sql)
-            self.cong.commit()
-        except:
-            logger.exception('Update operation error')
-            return False
-
-        logger.info('更新一条cookie进入数据库')
-        return True
+        sql = "UPDATE %s set %s where %s" % (db_table, setval, condition)
+        return self._commit(sql)
 
     def del_db(self,condition,db_table):
-        sql = 'DELETE FROM %s %s;' % (db_table, condition)
-        try:
-            self.curg.execute(sql)
-            self.cong.commit()
-        except:
-            logger.exception('Insert operation error')
-            return False
-
-        logger.info('删除一条表项成功')
-        return True
+        sql = 'DELETE FROM %s where %s;' % (db_table, condition)
+        return self._commit(sql)
 
     def check_acc(self,db_table,username,password):
         sql = "SELECT * from %s where username='%s' and password='%s'" %(db_table,username,password)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            info = self.curg.fetchone()
-        except:
-            logger.exception('Check_acc operation error')
-            return False
-        logger.info(info)
-        return info
+        return self._fetchone(sql)
 
     def min_key(self, key, db_table):
         sql = "select min(%s) from %s" %(key, db_table)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            info = self.curg.fetchone()
-        except:
-            logger.exception('Insert operation error')
-            return False
-        return info
+        return self._fetchone(sql)
 
     def max_key(self, key, db_table):
         sql = "select max(%s) from %s" %(key, db_table)
-        logger.info("%s",sql)
-        try:
-            self.curg.execute(sql)
-            info = self.curg.fetchone()
-        except:
-            logger.exception('Insert operation error')
-            return False
-        return info
+        return self._fetchone(sql)
+
+    def min_key_of_condition(self, key, db_table, condition):
+        sql = "select min(%s) from %s where %s" %(key, db_table, condition)
+        return self._fetchone(sql)
+
+    def max_key_condition(self, key, db_table, condition):
+        sql = "select max(%s) from %s where %s" %(key, db_table, condition)
+        return self._fetchone(sql)
+        
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

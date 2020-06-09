@@ -402,6 +402,74 @@ class AdminDbTaskView(sqla.ModelView):
 
 admin_bp.add_view(AdminDbTaskView(Tasktb, db.session, name='固化任务',endpoint='db-task',category='任务'))
 
+class TaskStatsTb(db.Model):
+    __tablename__='task_stats'
+    id              = db.Column(db.Integer, primary_key=True)
+    room_url         = db.Column(db.String(128))
+    period          = db.Column(db.Integer)
+    query_num       = db.Column(db.Integer)
+    throw_num       = db.Column(db.Integer)
+    ck_num          = db.Column(db.String(32))
+    ck_fail_num     = db.Column(db.Integer)
+    ck_total_num    = db.Column(db.Integer)
+    create_time  = db.Column(db.Integer)
+
+    def __str__(self):
+        return "{}, {}".format(self.nickname, self.password)
+
+    def __repr__(self):
+        return "{}: {}".format(self.id, self.__str__())
+
+class AdminDbTaskStatsView(sqla.ModelView):
+    can_create = False
+    can_delete = False
+    can_edit   = False
+    action_disallowed_list = ['delete', ]
+    column_formatters = dict(period=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.period),
+                             create_time=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.create_time))
+    can_view_details = True
+    column_display_pk = True
+    column_list = [
+        'id',
+        'room_url',
+        'period',
+        'query_num',
+        'throw_num',
+        'ck_num',
+        'ck_fail_num',
+        'ck_total_num',
+        'create_time',
+    ]
+    column_labels = dict(id='索引',
+                         room_url='房间链接',
+                         period='时间段',
+                         query_num='任务需求数',
+                         throw_num='任务投放数',
+                         ck_num='获取ck成功数',
+                         ck_fail_num='获取ck失败数',
+                         ck_total_num='获取ck总数',
+                         create_time='创建时间')
+
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
+    def _handle_view(self, name, **kwargs):
+        """
+        Override builtin _handle_view in order to redirect users when a view is not accessible.
+        """
+        if not self.is_accessible():
+            if current_user.is_authenticated:
+                # permission denied
+                abort(403)
+            else:
+                # login
+                return redirect(url_for('security.login', next=request.url))
+
+admin_bp.add_view(AdminDbTaskStatsView(TaskStatsTb, db.session, name='统计',endpoint='task-stats',category='任务统计'))
+
 # BufferView
 class BufferView(admin.BaseView):
     @admin.expose('/',  methods=['POST', 'GET'])

@@ -40,6 +40,7 @@ CUR_PORT = DEF_PORT
 #app = Flask(__name__, template_folder="templates/html",static_folder="templates/html",static_url_path="")
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
+app.config['BABEL_DEFAULT_LOCALE'] = 'zh_CN'
 app.register_blueprint(strapi_bp,   url_prefix='/strapi')  #api接口
 
 #配置界面主题，可选参数：Cerulean  Cosmo  Cyborg Darkly Flatly Journal

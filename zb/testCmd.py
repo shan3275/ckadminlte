@@ -14,6 +14,7 @@ import random
 import requests
 import threading
 import threadpool
+from datetime import datetime
 import libdb    as libdb
 import libredis as libredis
 import libcm     as libcm
@@ -205,6 +206,19 @@ class Cli(Cmd):
 
     def help_ckcity(self):
         print '使用cktb表项中的lastip查询所属本地IP库获得city，并更新到cktb中' 
+
+    def do_taskstat(self,arg):
+        if arg == '':
+            print '输入时间，例如：2020-06-09 20:28:00'
+            return
+        #转换成时间数组
+        timeArray = time.strptime(arg, "%Y-%m-%d %H:%M:%S")
+        print timeArray
+        timestamp = time.mktime(timeArray)
+        libcm.colectTaskStatByHour(timestamp)
+
+    def help_taskstat(self):
+        print '将任务统计写入数据库表项中，输入参数：2020-06-09 20:28:00'
 
 if __name__ == "__main__":
     reload(sys)

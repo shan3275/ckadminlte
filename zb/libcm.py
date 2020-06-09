@@ -179,6 +179,7 @@ def _getIPArea(ip):
         area:    false 为失败,否则为city 或者province
     '''
     #首先查询本地ip库
+    ip=ip.decode('utf-8')
     localArea = db.find_map(ip, "CN")
     logger.info(localArea)
     
@@ -746,6 +747,7 @@ def compareIpDB():
             postcode = area[4]
             province = area[1]
             city     = area[2]
+            addr = addr.decode('utf-8')
             localArea = db.find_map(addr, "CN")
             if city == localArea['city_name']:
                 line = '%s %s %s %s %s 匹配' %(addr, province,city, localArea['region_name'], localArea['city_name'])
@@ -794,7 +796,8 @@ def updateCktbCity():
             logger.info(ck)
             id      = ck[0]
             lastip  = ck[1]
-            localArea = db.find_map(lastip, "CN")
+            ip=lastip.decode('utf-8')
+            localArea = db.find_map(ip, "CN")
             #更新进入表项
             if localArea['city_name'] != '':
                 setval = "area='%s'" %(localArea['city_name'])
@@ -867,6 +870,89 @@ def getGstatInfo():
         g_stat['check_req_fail']      = check['ck_req_fail']
 
     return g_stat
+
+def colectTaskStatByHour(hour):
+    '''
+    收集某个小时的任务投放统计，以房间号和小时时间段为基准，写入数据库
+    params:
+        hour:   小时时间段，int，比如:2020/6/9 11:00:00, 数值为：1591671600
+    return:
+        ou:   dict(error=0, msg='')
+    '''
+    ou = dict(error=0, msg='ok')
+    #任务存储在DB15中，故获取
+    crack = libredis.LibRedis(15)
+    if crack.zCard(CONF['redis']['begintask']) == 0:
+        ou['error'] = 1
+        ou['msg']   = 'no task'
+        return ou
+
+    t_start = (int(hour /3600) )* 3600
+    t_end   = t_start + 3600 -1 # 结束时间小于等于这个时间
+
+    #对比时间
+    if crack.zCount(CONF['redis']['begintask'],t_start, t_end) == 0:
+        ou['error'] = 1
+        ou['msg']   = 'no task'
+        return ou
+
+    task_list = crack.zRangeByScore(CONF['redis']['begintask'], t_start, t_end)
+    if  len(task_list) == 0:
+        ou['error'] = 1
+        ou['msg']   = 'no task'
+        return ou
+    
+    for task in task_list:
+        task_dict = crack.hashGetAll(task)
+        if task_dict == None:
+            logger.error('异常，在redis中找不到表项')
+            ou['error'] = 1
+            ou['msg'] = 'no task'
+            return ou
+        #logger.info(task_dict)
+        effective = int(task_dict['effective'])
+        if effective == 0:
+            task_dict = None
+            continue
+        room_url        = task_dict['room_url']
+        period          = t_start
+        query_num       = int(task_dict['user_num'])
+        throw_num       = int(task_dict['req'])
+        ck_num          = int(task_dict['ck_req'])
+        ck_fail_num     = int(task_dict['ck_req_fail'])
+        ck_total_num    = ck_num + ck_fail_num
+        create_time      = int(time.time())
+        condition = "room_url='%s' and period=%d" %(room_url, period)
+        sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['taskstatstb'])
+        if sql == False:
+            ou['error'] = 1
+            ou['msg']   = '读数据库失败'
+            continue
+        if sql == None:
+            #查询后没有，则写入数据库
+            key = "room_url, period, query_num, throw_num, ck_num, ck_fail_num, ck_total_num, create_time"
+            value = "'%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d'" % (room_url, period, query_num, \
+                        throw_num, ck_num, ck_fail_num, ck_total_num, create_time)
+            logger.debug('key:%s, value:%s', key, value)
+            rv = libdb.LibDB().insert_db(key, value, CONF['database']['taskstatstb'])
+            if rv != True:
+                ou['error'] = 1
+                ou['msg']   = '写数据库失败'
+                continue
+        else:
+            #查询到了，更新数据库
+            setval = "query_num=query_num + %d,throw_num=throw_num + %d,"\
+                     "ck_num=ck_num+ %d,ck_fail_num=ck_fail_num+%d,"\
+                     "ck_total_num=ck_total_num+%d, create_time=%d" \
+                     %(query_num, throw_num, ck_num, ck_fail_num, ck_total_num, create_time)
+            logger.debug('setval:%s, condition:%s', setval, condition)
+            rv = libdb.LibDB().update_db(setval, condition, CONF['database']['taskstatstb'])
+            if rv != True:
+                ou['error'] = 1
+                ou['msg']   = '更新数据库失败'
+                continue
+
+    return ou
 
 logger = gl.get_logger()
 CONF   = gl.get_conf()

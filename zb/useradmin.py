@@ -31,7 +31,6 @@ g_stat = {"cycle":1, "pos":0,'take_out_cks':0,"total_renqi":0, "total":0, "asign
 g_records = []
 g_cnt = {}
 
-
 def gstat_init():
     """
     g_stat 变量初始化，在redis中
