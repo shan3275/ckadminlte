@@ -449,7 +449,7 @@ class AdminDbTaskStatsView(sqla.ModelView):
                          ck_fail_num='获取ck失败数',
                          ck_total_num='获取ck总数',
                          create_time='创建时间')
-
+    column_filters = ('room_url','period') 
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
