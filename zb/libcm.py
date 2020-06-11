@@ -446,7 +446,7 @@ def getOneCK(ip,usid, grp='G0'):
 
     #check IP
     if _is_ip(ip) == False:
-        logger.error('getOneCK ip invalied!')
+        logger.error('getOneCK ip invalied!, %s',ip)
         return None
      
     if CONF['localipdb']  == False:
@@ -824,6 +824,7 @@ def updateCktbCity():
                 num += 1
     return num
 
+
 def getGstatInfo():
     '''
     获取一些全局信息，传递给页面展示
@@ -897,6 +898,43 @@ def _getCkNumByCondition(conditions):
     else:
         Digit = '0'
     return Digit
+
+
+def getDbCkColddateStatInfo():
+    '''
+    获取db中的ck到期时间的统计信息
+    :return:
+        cd_stat:  list(dict(), dict())
+    '''
+    cd_stat = list()
+
+    timestamp = int(time.time())
+    today = datetime.date.today()
+    for i in range(0,7):
+        index=dict(num=0)
+        if i == 0:
+            index['name'] = '已到期'
+            index['start'] = 0
+            index['end']  = timestamp
+        elif i == 1:
+            index['name'] = '今日到期'
+            index['start'] = timestamp
+            index['end']  = int(time.mktime(today.timetuple())) + 3600 * 24  # 今天24点时间
+        else:
+            time_local = time.localtime(timestamp+3600*24*(i-1))
+            index['name'] = time.strftime("%Y-%m-%d",time_local)
+            index['start'] =int(time.mktime(today.timetuple())) + 3600 * 24*(i-1)
+            index['end'] =int(time.mktime(today.timetuple())) + 3600 * 24*i
+        cd_stat.append(index)
+
+    for i in range(len(cd_stat)):
+        conditions = 'colddate >= %d and colddate < %d and effective=1' % (cd_stat[i]['start'], cd_stat[i]['end'])
+        cd_stat[i]['num'] = _getCkNumByCondition(conditions)
+
+    logger.info(cd_stat)
+    return cd_stat
+
+
 
 def getDbCKStatsInfo():
     '''

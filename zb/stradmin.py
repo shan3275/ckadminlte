@@ -86,7 +86,8 @@ class MyHomeView(admin.AdminIndexView):
         g_stat = libcm.getGstatInfo()
         rd_stats = libcm.getRedisCKStatsInfo()
         db_stats = libcm.getDbCKStatsInfo()
-        return self.render('stradmin/index.html',  g_stat=g_stat, rd_stats=rd_stats, db_stats=db_stats)
+        cd_stats = libcm.getDbCkColddateStatInfo()
+        return self.render('stradmin/index.html',  g_stat=g_stat, rd_stats=rd_stats, db_stats=db_stats, cd_stats=cd_stats)
 
     @admin.expose('/download', methods=['POST'])
     def download(self):

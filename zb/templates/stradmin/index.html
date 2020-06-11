@@ -149,6 +149,31 @@
 
             </div>
 
+            <hr>
+
+            <div class="row">
+                <div class="col-lg-5 col-xs-6">
+                    <small>CK冷却统计</small>
+                    <table class="table table-striped table-dark">
+                      <thead>
+                        <tr>
+                          <th scope="col">到期时间</th>
+                          <th scope="col">数量</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      {% for record in cd_stats %}
+                        <tr>
+                          <td>{{ record['name'] }}</td>
+                          <td>{{ record['num'] }}</td>
+                        </tr>
+                      {% endfor %}
+                      </tbody>
+                    </table>
+                </div>
+            </div>
+
+
         </div>
         {% endif %}
 
