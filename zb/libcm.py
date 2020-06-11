@@ -14,6 +14,7 @@ import chardet
 import urllib
 import ipdb
 import time,datetime
+import IPy
 import globalvar as gl
 
 global logger
@@ -191,15 +192,16 @@ def _getIPArea(ip):
 
     return area
 
-def _getCKByUsid(usid):
+def _getCKByUsid(usid,grp='G0'):
     '''
         通过查询usid，获取一条ck记录
     Args:
         usid:  用户id，唯一码
+        grp :  ck分组
     Return:
         record: ck记录表项 or None or False(运行出错)
     '''
-    condition = " token='%s' and effective=1 " %(usid)
+    condition = " token='%s' and effective=1 and grp='%s' " %(usid, grp)
     sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
@@ -219,7 +221,7 @@ def _getCKByUsid(usid):
         return record  #成功
     return None
 
-def _getCKByPostCode(ip, usid, postCode):
+def _getCKByPostCode(ip, usid, postCode, grp='G0'):
     '''
     获取一条ck记录,从mysql中
     Args:
@@ -233,13 +235,13 @@ def _getCKByPostCode(ip, usid, postCode):
         logger.error('ip(%s) or postCode(%s) null', ip, postCode)
         return None
     timestamp = int(time.time())
-    condition = "postcode='%s' and effective=1 order by colddate asc limit 10" %(postCode)
+    condition = "postcode='%s' and effective=1 and grp='%s' order by colddate asc limit 10" %(postCode, grp)
     sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
         return False
     elif sql :   #查询成功
-        logger.info(sql);
+        logger.info(sql)
         colddate = sql[8]
         logger.info('冷却时间：%d',colddate)
         if colddate <= timestamp: #冷却时间已经过了，可以使用
@@ -256,7 +258,7 @@ def _getCKByPostCode(ip, usid, postCode):
     
     return None    
 
-def _getCKByArea(ip, usid, area):
+def _getCKByArea(ip, usid, area,grp='G0'):
     '''
     获取一条ck记录,从mysql中
     Args:
@@ -270,7 +272,7 @@ def _getCKByArea(ip, usid, area):
         logger.error('ip(%s) or area(%s) null', ip, area)
         return None
     timestamp = int(time.time())
-    condition = "area='%s' and effective=1 order by colddate asc limit 10" %(area)
+    condition = "area='%s' and effective=1 and grp='%s' order by colddate asc limit 10" %(area, grp)
     sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['cktb'])
     if  sql == False : #查询失败
         logger.error('get ck by lastip 读数据库失败')
@@ -293,24 +295,25 @@ def _getCKByArea(ip, usid, area):
     
     return None   
 
-def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
+def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode,grp='G0'):
     '''
     从Redis中获取一条ck，添加ip、冷却时间、邮编，插入mysql
     Args:
         ip:         IP地址
         usid:       用户唯一ID
         postCode:   邮编信息
+        grp     :   ck分组
     Return:
         record: ck记录表项 or None or False    
     '''
     #获取redis中ck 键值
     crack = libredis.LibRedis(CONF['redis']['cktbdb'])
-    num = crack.setCard(CONF['redis']['live'])
+    num = crack.setCard(grp)
     if num == 0:
         logger.info('cookie has used over, fecth record fail')
         return None
 
-    nickname = crack.setSpop(CONF['redis']['live'])
+    nickname = crack.setSpop(grp)
     if nickname == None:
         logger.error('fetch record get nickname null!!')
         return None
@@ -336,7 +339,7 @@ def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
         timestamp = int(time.time())
         key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, postcode, token"
         value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s'" \
-                            %(record['nickname'], record['password'], 'G0', \
+                            %(record['nickname'], record['password'], grp, \
                             timestamp, timestamp,timestamp+CONF['ckcoldtime'], \
                             record['cookie'], ip, postCode,usid)
         logger.debug('key:%s, value:%s', key, value)
@@ -355,24 +358,25 @@ def _getOneCKFromRedisAndWriteToDB(ip,usid, postCode):
     return record     
 
 
-def _getOneCKFromRedisAndWriteInfoToDB(ip,usid, area):
+def _getOneCKFromRedisAndWriteInfoToDB(ip,usid, area, grp='G0'):
     '''
     从Redis中获取一条ck，添加ip、冷却时间、区域信息，插入mysql
     Args:
         ip:         IP地址
         usid:       用户唯一ID
         area:       区域信息
+        grp:        ck分组信息
     Return:
         record: ck记录表项 or None or False    
     '''
     #获取redis中ck 键值
     crack = libredis.LibRedis(CONF['redis']['cktbdb'])
-    num = crack.setCard(CONF['redis']['live'])
+    num = crack.setCard(grp)
     if num == 0:
         logger.info('cookie has used over, fecth record fail')
         return None
 
-    nickname = crack.setSpop(CONF['redis']['live'])
+    nickname = crack.setSpop(grp)
     if nickname == None:
         logger.error('fetch record get nickname null!!')
         return None
@@ -398,7 +402,7 @@ def _getOneCKFromRedisAndWriteInfoToDB(ip,usid, area):
         timestamp = int(time.time())
         key = "nickname, password, grp, regdate, lastdate, colddate, cookie, lastip, area, token"
         value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s'" \
-                            %(record['nickname'], record['password'], 'G0', \
+                            %(record['nickname'], record['password'], grp, \
                             timestamp, timestamp,timestamp+CONF['ckcoldtime'], \
                             record['cookie'], ip, area,usid)
         logger.debug('key:%s, value:%s', key, value)
@@ -416,8 +420,14 @@ def _getOneCKFromRedisAndWriteInfoToDB(ip,usid, area):
 
     return record   
 
+def  _is_ip(address):
+    try:
+        IPy.IP(address)
+        return True
+    except Exception as  e:
+        return False
 
-def getOneCK(ip,usid):
+def getOneCK(ip,usid, grp='G0'):
     '''
     从mysql数据库或者redis获取一条cookie
     Args:
@@ -428,11 +438,16 @@ def getOneCK(ip,usid):
         return None
     
     # 1. 先查询mysql是是否存在唯一id的记录
-    record = _getCKByUsid(usid)
+    record = _getCKByUsid(usid,grp)
     if record == False:
         return None
     elif record != None:
         return record
+
+    #check IP
+    if _is_ip(ip) == False:
+        logger.error('getOneCK ip invalied!')
+        return None
      
     if CONF['localipdb']  == False:
         # 2.没有记录，则获取IP归属地
@@ -446,14 +461,14 @@ def getOneCK(ip,usid):
         
         
         # 3.根据邮编查询ck记录
-        record = _getCKByPostCode(ip, usid, postCode)
+        record = _getCKByPostCode(ip, usid, postCode,grp)
         if record == False:
             return None
         elif record != None:
             return record
 
         # 4. 从redis中取出一条空记录（redis中存放的都是空记录）
-        record = _getOneCKFromRedisAndWriteToDB(ip,usid, postCode)
+        record = _getOneCKFromRedisAndWriteToDB(ip,usid, postCode, grp)
         logger.info(record)
 
     else:
@@ -467,14 +482,14 @@ def getOneCK(ip,usid):
             return None
         
         # 3.根据区域查询ck记录
-        record = _getCKByArea(ip, usid, area)
+        record = _getCKByArea(ip, usid, area, grp)
         if record == False:
             return None
         elif record != None:
             return record
         
         # 4. 从redis中取出一条记录（redis中存放的都是空记录）
-        record = _getOneCKFromRedisAndWriteInfoToDB(ip, usid, area)
+        record = _getOneCKFromRedisAndWriteInfoToDB(ip, usid, area, grp)
         logger.info(record)
 
     return record
@@ -845,8 +860,11 @@ def getGstatInfo():
     g_stat['uneffective'] = Digit
 
     #获取redis中ck数量
+    num = 0
     crack = libredis.LibRedis(CONF['redis']['cktbdb'])
-    num = crack.setCard(CONF['redis']['live'])
+    grps  = crack.setSmembers(CONF['redis']['ckgrpset'])
+    for grp in grps:
+        num += crack.setCard(grp)
     g_stat['unused'] = num
 
     #获取check统计数量
@@ -870,6 +888,94 @@ def getGstatInfo():
         g_stat['check_req_fail']      = check['ck_req_fail']
 
     return g_stat
+
+
+def _getCkNumByCondition(conditions):
+    count = libdb.LibDB().query_count_by_condition(conditions, CONF['database']['cktb'])
+    if count != False:
+        Digit = count[0]
+    else:
+        Digit = '0'
+    return Digit
+
+def getDbCKStatsInfo():
+    '''
+    获取db中ck的统计信息，按分组
+    return:
+        stat:   list(dict(),dict())
+    '''
+    #获取redis中ck数量
+    stats = list()
+
+    totals           = 0
+    effective_nums   = 0
+    uneffective_nums = 0
+    could_uses       = 0
+    crack = libredis.LibRedis(CONF['redis']['cktbdb'])
+    grps  = crack.setSmembers(CONF['redis']['ckgrpset'])
+    for grp in grps:
+        grp_dict = dict()
+
+        #总数
+        conditions = "grp='%s'" % (grp)
+        total = _getCkNumByCondition(conditions)
+
+        #有效
+        conditions = "grp='%s' and effective=1" % (grp)
+        effective_num = _getCkNumByCondition(conditions)
+
+        #无效
+        conditions = "grp='%s' and effective!=1" % (grp)
+        uneffective_num = _getCkNumByCondition(conditions)
+
+        #可用
+        timestamp = int(time.time())
+        conditions = "colddate < %d and effective=1 and grp='%s'" % (timestamp, grp)
+        could_use = _getCkNumByCondition(conditions)
+
+        grp_dict['grp']             = grp
+        grp_dict['total']           = total
+        grp_dict['effective_num']   = effective_num
+        grp_dict['uneffective_num'] = uneffective_num
+        grp_dict['could_use']       = could_use
+        totals           += total
+        effective_nums   += effective_num
+        uneffective_nums += uneffective_num
+        could_uses       += could_use
+
+        stats.append(grp_dict)
+    #总计
+    grp_dict = dict()
+    grp_dict['grp'] = '总计'
+    grp_dict['total'] = totals
+    grp_dict['effective_num'] = effective_nums
+    grp_dict['uneffective_num'] = uneffective_nums
+    grp_dict['could_use'] = could_uses
+    stats.append(grp_dict)
+    return  stats
+
+def getRedisCKStatsInfo():
+    '''
+    获取redis中ck的统计信息，按分组
+    return:
+        stat:   list(dict(),dict())
+    '''
+    #获取redis中ck数量
+    stats = list()
+    nums = 0
+    crack = libredis.LibRedis(CONF['redis']['cktbdb'])
+    grps  = crack.setSmembers(CONF['redis']['ckgrpset'])
+    for grp in grps:
+        grp_dict = dict()
+        num = crack.setCard(grp)
+        grp_dict['grp'] = grp
+        grp_dict['num'] = num
+        nums += num
+        stats.append(grp_dict)
+    #总计
+    grp_dict = dict(grp='总计', num=nums)
+    stats.append(grp_dict)
+    return  stats
 
 def colectTaskStatByHour(hour):
     '''

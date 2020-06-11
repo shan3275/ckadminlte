@@ -277,11 +277,14 @@ class UserHomeView(admin.AdminIndexView):
             userId = 0
         taskID = request.args.get('id')
         checkType = request.args.get('type')
+        grp = request.args.get('grp')
+        if grp == None:
+            grp = 'G0'
         #usid 为用户唯一id
         usid  = request.args.get('usid')
         if usid == None:
             usid = ''
-        record = libcm.getOneCK(ip,usid)
+        record = libcm.getOneCK(ip,usid,grp)
         if record == None :
             cookie = "None"
         else:

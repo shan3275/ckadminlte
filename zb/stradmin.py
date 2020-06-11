@@ -84,7 +84,9 @@ class MyHomeView(admin.AdminIndexView):
     @admin.expose('/')
     def index(self):
         g_stat = libcm.getGstatInfo()
-        return self.render('stradmin/index.html',  g_stat=g_stat)
+        rd_stats = libcm.getRedisCKStatsInfo()
+        db_stats = libcm.getDbCKStatsInfo()
+        return self.render('stradmin/index.html',  g_stat=g_stat, rd_stats=rd_stats, db_stats=db_stats)
 
     @admin.expose('/download', methods=['POST'])
     def download(self):
@@ -119,9 +121,11 @@ class MyHomeView(admin.AdminIndexView):
         logger.debug('request.method:%s', request.method)
         logger.debug('request.files:%s', request.files['file'])
         if request.method == 'POST':
+            group  = request.form.get('group')
+            logger.debug('group:%s', group)
             # 保存文件
             #ou = libcommon.writeFileToDB(request.files['file'])
-            ou = libcommon.writeCkFileToDBorRedis(request.files['file'])
+            ou = libcommon.writeCkFileToDBorRedis(request.files['file'],group)
             if ou['error'] == 0:
                 return redirect(url_for('admin.index'))
             else:

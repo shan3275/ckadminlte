@@ -19,9 +19,9 @@ global CONF
 def now():
     return time.strftime("%m-%d %H:%M:%S", time.localtime())
 
-def cookieWriteToDB(nickname, pwd, cookie, grp):
+def cookieWriteToDB(nickname, pwd, cookie, group='G0'):
     key = "nickname, password, grp, regdate, lastdate, colddate, cookie"
-    value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s'" % (nickname, pwd, grp, \
+    value = "'%s', '%s', '%s', '%d', '%d', '%d', '%s'" % (nickname, pwd, group, \
                                                     int(time.time()), int(time.time()), \
                                                     int(time.time()), cookie)
     logger.debug('key:%s, value:%s', key, value)
@@ -38,8 +38,9 @@ def updateFailWriteToDB(nickname, update_fail):
     rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
     return rv
 
-def cookieUpdateToDB(nickname, pwd, cookie):
-    setval = "password='%s',lastdate='%d',cookie='%s',update_fail=0" %(pwd, int(time.time()), cookie)
+def cookieUpdateToDB(nickname, pwd, cookie,group='G0'):
+    setval = "password='%s',lastdate='%d',cookie='%s',update_fail=0,grp='%s'" \
+        %(pwd, int(time.time()), cookie, group)
     condition = "nickname='%s'" %(nickname)
     logger.debug('setval:%s, condition:%s', setval, condition)
     rv = libdb.LibDB().update_db(setval, condition, CONF['database']['table'])
@@ -87,7 +88,7 @@ def cookie_txt_parse_for_db(line):
     record['submission_date'] = now()
     return record
 
-def cookie_load_for_db(path):
+def cookie_load_for_db(path, group='G0'):
     FILE = open(path, 'rb')
     records =[]
     seq = 0
@@ -111,6 +112,7 @@ def cookie_load_for_db(path):
             continue
 
         record['seq'] = seq
+        record['group'] = group
         records.append(record)
         seq += 1
     logger.debug("%d cookies loaded from %s!" ,len(records), path)
@@ -151,7 +153,7 @@ def writeFileToDB(file, group='G0'):
                 ou['msg']   = '写数据库失败'
                 continue
         else:
-            rv = cookieUpdateToDB(record['nickname'], record['password'], record['cookie'])
+            rv = cookieUpdateToDB(record['nickname'], record['password'], record['cookie'], group)
             if rv != True:
                 ou['error'] = 1
                 ou['msg']   = '更新数据库失败'
@@ -420,18 +422,36 @@ def writeOneCkRecordToRedis(record, userId):
         return False
 
     crack = libredis.LibRedis(userId)
+    rec = crack.hashGetAll(record['nickname'])
+    if rec != None:
+        logger.info('cookie record  existed nickname:%s, so first delete', record['nickname'])
+        #删除从已有的集合中删除
+        if rec.has_key('group'):
+            if crack.setSrem(rec['group'],record['nickname']):
+                logger.info('从 %s 组集合中删除 %s 成功', rec['group'], record['nickname'])
+        #删除ck
+        if crack.delete(record['nickname']) :
+            logger.info('从redis中删除一条ck %s 成功', record['nickname'])
     # cookie写入redis
     rv = crack.hashMSet(record['nickname'], record)
-    if rv != True:
-        logger.info('write to redis fail %s', record)
-        return False
+    #if rv != True:
+    #    logger.info('write to redis fail %s', record)
+    #    return False
     # ck名称集合，写入redis，集合为无序集合
-    rv = crack.setAdd(CONF['redis']['live'], record['nickname'])
-    if rv != True:
-        logger.error('repeat,write ck nickanme set to redis fail')
-        return False
-    else:
-        logger.info('write ck nickname to set success!')
+    rv = crack.setAdd(record['group'], record['nickname'])
+    #if rv != True:
+    #    logger.error('repeat,write ck nickanme set to redis fail')
+    #    return False
+    #else:
+    #    logger.info('write ck nickname to set success!')
+    
+    #ck group集合，写入redis中，集合为无序集合
+    rv = crack.setAdd(CONF['redis']['ckgrpset'], record['group'])
+    #if rv != True:
+    #    logger.error('repeat,write ck nickanme set to redis fail')
+    #    return False
+    #else:
+    #    logger.info('write ck nickname to set success!')
 
     
     return True
@@ -454,7 +474,7 @@ def writeCkFileToDBorRedis(file, group='G0'):
 
     # 读取文件
     logger.debug("upload_path: %s", upload_path)
-    records = cookie_load_for_db(upload_path)
+    records = cookie_load_for_db(upload_path,group)
     #logger.debug(records)
     ou['data']['num'] = len(records)
 
@@ -475,7 +495,7 @@ def writeCkFileToDBorRedis(file, group='G0'):
                 continue
         else:
             #查询到了，更新数据库
-            rv = cookieUpdateToDB(record['nickname'], record['password'], record['cookie'])
+            rv = cookieUpdateToDB(record['nickname'], record['password'], record['cookie'],group)
             if rv != True:
                 ou['error'] = 1
                 ou['msg']   = '更新数据库失败'

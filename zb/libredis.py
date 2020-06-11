@@ -243,6 +243,17 @@ class LibRedis():
         #logger.info(rv)
         return rv
 
+    def setSrem(self,name,*values):
+        """
+        删除字典中的一个或多个键
+        :param name: 字典名称
+        :param key: 字典键，单个键或者多个键。
+        :return: 删除数量，没有为0
+        """
+        rv = self.redis.srem(name, *values)
+        logger.info(" setSrem return: %d",rv)
+        return rv
+
     def setSpop(self,name):
         """
         移除并返回集合中的一个随机元素
@@ -334,7 +345,7 @@ class LibRedis():
 logger = gl.get_logger()
 CONF   = gl.get_conf()
 
-"""
+'''
 if __name__ == '__main__':
     crack = LibRedis()
     rv = crack.strSet('name', 'Hello World')
@@ -350,7 +361,11 @@ if __name__ == '__main__':
     rv = crack.setAdd('redis', 'family')
     print(rv)
     print(crack.setCard('redis'))
-    print(crack.setSmembers('redis'))
+    rv = crack.setSmembers('redis')
+    print(rv)
+    print(type(rv))
+    for every in rv:
+        print every
     crack.setSunionstore('dst', 'cknnsetconst')
 
     rv = crack.listLPush('list', 'apple1')
@@ -379,4 +394,4 @@ if __name__ == '__main__':
 
     print(crack.listLPop('list1'))
     print(crack.listLPop('list3'))
-"""
+'''
