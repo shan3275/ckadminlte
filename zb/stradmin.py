@@ -89,6 +89,10 @@ class MyHomeView(admin.AdminIndexView):
         cd_stats = libcm.getDbCkColddateStatInfo()
         return self.render('stradmin/index.html',  g_stat=g_stat, rd_stats=rd_stats, db_stats=db_stats, cd_stats=cd_stats)
 
+    @admin.expose('/loginn')
+    def loginn(self):
+        return self.render('stradmin/login.html')
+
     @admin.expose('/download', methods=['POST'])
     def download(self):
         # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
@@ -477,6 +481,12 @@ admin_bp.add_view(AdminDbTaskStatsView(TaskStatsTb, db.session, name='统计',en
 
 # BufferView
 class BufferView(admin.BaseView):
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
     @admin.expose('/',  methods=['POST', 'GET'])
     def index(self):
         if request.method == 'POST':
@@ -579,10 +589,12 @@ class CookieAdmin(sqla.ModelView):
     column_filters = ('grp','areaid',) 
     column_default_sort = [('nickname', False), ('password', False)]  # sort on multiple columns
 
+
     def is_accessible(self):
         return (current_user.is_active and
-                current_user.is_authenticated
-        )
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )        
 
     def _handle_view(self, name, **kwargs):
         """
@@ -631,6 +643,14 @@ class SupplierAdmin(sqla.ModelView):
         'note',
     ]
     column_default_sort = [('id', False)]  # sort by field id
+
+
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
 admin_bp.add_view(SupplierAdmin(Supplier,  db.session,name='Cookie供应商', endpoint='Supplier', category='Cookies'))
 
 #Group models
@@ -733,6 +753,12 @@ class GroupAdmin(sqla.ModelView):
     ]
     #column_default_sort = [('nickname', False), ('password', False)]  # sort on multiple columns
     column_default_sort = [('id', False)]  # sort by field id
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
 admin_bp.add_view(GroupAdmin(Group,  db.session,name='Cookie组', endpoint='Group', category='Cookies'))
 
 # Custom
@@ -766,6 +792,12 @@ class CustomAdmin(sqla.ModelView):
         'note',
     ]
     column_default_sort = [('id', False)]  # sort by field id
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+            
 admin_bp.add_view(CustomAdmin(Custom,  db.session,name='客户', endpoint='Custom',category='需求'))
 
 # Orders
@@ -839,6 +871,8 @@ class OrderAdmin(sqla.ModelView):
         'edate',
         'note',
     ]
+
+
 
     def is_accessible(self):
         return (current_user.is_active and
