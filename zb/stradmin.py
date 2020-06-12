@@ -89,10 +89,6 @@ class MyHomeView(admin.AdminIndexView):
         cd_stats = libcm.getDbCkColddateStatInfo()
         return self.render('stradmin/index.html',  g_stat=g_stat, rd_stats=rd_stats, db_stats=db_stats, cd_stats=cd_stats)
 
-    @admin.expose('/loginn')
-    def loginn(self):
-        return self.render('stradmin/login.html')
-
     @admin.expose('/download', methods=['POST'])
     def download(self):
         # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
