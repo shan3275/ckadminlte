@@ -433,5 +433,55 @@ def colectTaskStatByHour(hour):
     return ou
 
 
+def collectClientRequestTaskStatsByHour(hour):
+    '''
+    收集某个小时的任务投放统计，以房间号和小时时间段为基准，写入数据库
+    params:
+        hour:   小时时间段，int，比如:2020/6/9 11:00:00, 数值为：1591671600
+    return:
+        ou:   dict(error=0, msg='')
+    '''
+    ou = dict(error=0, msg='ok')
+    #任务存储在DB15中，故获取
+    total  = 0
+    piderr = 0
+    notask = 0
+    task   = 0
+    create_time      = int(time.time())
+    crack = libredis.LibRedis(CONF['redis']['taskstatdb'])
+    taskstatstr = time.strftime("%Y%m%d%H", time.localtime(hour))
+    record = crack.hashGetAll(taskstatstr)
+    if record != None:
+        logger.info(record)
+        if record.has_key('total'):
+            total = record['total']
+        if record.has_key('piderr'):
+            piderr = record['piderr']
+        if record.has_key('notask'):
+            notask = record['notask']
+        if record.has_key('task'):
+            task = record['task']
+    uid = crack.setCard(taskstatstr+'un')
+    period = (int(hour /3600) )* 3600
+    condition = "period=%d" %(period)
+    sql = libdb.LibDB().query_one_by_condition(condition, CONF['database']['creqtaskstatstb'])
+    if sql == False:
+        ou['error'] = 1
+        ou['msg']   = '读数据库失败'
+        return ou
+    if sql == None:
+        #查询后没有，则写入数据库
+        key = "period, total_num, piderr_num, notask_num, task_num, uid_num, create_time"
+        value = "'%d', '%d', '%d', '%d', '%d', '%d', '%d'" % (period, int(total), \
+                        int(piderr), int(notask), int(task), int(uid), create_time)
+        logger.debug('key:%s, value:%s', key, value)
+        rv = libdb.LibDB().insert_db(key, value, CONF['database']['creqtaskstatstb'])
+        if rv != True:
+            ou['error'] = 1
+            ou['msg']   = '写数据库失败'
+            return ou
+
+    return ou
+
 logger = gl.get_logger()
 CONF = gl.get_conf()

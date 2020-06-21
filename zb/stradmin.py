@@ -407,17 +407,18 @@ class AdminDbTaskView(sqla.ModelView):
 
 admin_bp.add_view(AdminDbTaskView(Tasktb, db.session, name='固化任务',endpoint='db-task',category='任务'))
 
+#房间任务统计
 class TaskStatsTb(db.Model):
     __tablename__='task_stats'
     id              = db.Column(db.Integer, primary_key=True)
-    room_url         = db.Column(db.String(128))
+    room_url        = db.Column(db.String(128))
     period          = db.Column(db.Integer)
     query_num       = db.Column(db.Integer)
     throw_num       = db.Column(db.Integer)
     ck_num          = db.Column(db.String(32))
     ck_fail_num     = db.Column(db.Integer)
     ck_total_num    = db.Column(db.Integer)
-    create_time  = db.Column(db.Integer)
+    create_time     = db.Column(db.Integer)
 
     def __str__(self):
         return "{}, {}".format(self.nickname, self.password)
@@ -430,7 +431,7 @@ class AdminDbTaskStatsView(sqla.ModelView):
     can_delete = False
     can_edit   = False
     action_disallowed_list = ['delete', ]
-    column_formatters = dict(period=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.period),
+    column_formatters = dict(period=lambda v, c, m, p:time.strftime("%Y/%m/%d %H:%M", time.localtime(m.period)),
                              create_time=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.create_time))
     can_view_details = True
     column_display_pk = True
@@ -455,6 +456,7 @@ class AdminDbTaskStatsView(sqla.ModelView):
                          ck_total_num='获取ck总数',
                          create_time='创建时间')
     column_filters = ('room_url','period') 
+    column_default_sort = ('id', True)
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
@@ -473,7 +475,74 @@ class AdminDbTaskStatsView(sqla.ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-admin_bp.add_view(AdminDbTaskStatsView(TaskStatsTb, db.session, name='统计',endpoint='task-stats',category='任务统计'))
+admin_bp.add_view(AdminDbTaskStatsView(TaskStatsTb, db.session, name='房间统计',endpoint='room-task-stats',category='统计'))
+
+#终端请求统计
+class CReqTaskStatsTb(db.Model):
+    __tablename__='creqtask_stats'
+    id              = db.Column(db.Integer, primary_key=True)
+    period          = db.Column(db.Integer)
+    total_num       = db.Column(db.Integer)
+    piderr_num      = db.Column(db.Integer)
+    notask_num      = db.Column(db.String(32))
+    task_num        = db.Column(db.Integer)
+    uid_num         = db.Column(db.Integer)
+    create_time     = db.Column(db.Integer)
+
+    def __str__(self):
+        return "{}, {}".format(self.nickname, self.password)
+
+    def __repr__(self):
+        return "{}: {}".format(self.id, self.__str__())
+
+class AdminDbClientReqTaskStatsView(sqla.ModelView):
+    can_create = False
+    can_delete = False
+    can_edit   = False
+    action_disallowed_list = ['delete', ]
+    column_formatters = dict(period     =lambda v, c, m, p:time.strftime("%Y/%m/%d %H:%M", time.localtime(m.period)),
+                             create_time=lambda v, c, m, p:datetime.datetime.fromtimestamp(m.create_time))
+    can_view_details = True
+    column_display_pk = True
+    column_list = [
+        'id',
+        'period',
+        'total_num',
+        'piderr_num',
+        'notask_num',
+        'task_num',
+        'uid_num',
+        'create_time',
+    ]
+    column_labels = dict(id='索引',
+                         period='时间段',
+                         total_num='总请求数',
+                         piderr_num='请求错误数',
+                         notask_num='未获取任务数',
+                         task_num='成功获取任务数',
+                         uid_num='唯一用户数',
+                         create_time='创建时间')
+    #column_filters = ('period') 
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('superuser') or current_user.has_role('user'))
+        )
+
+    def _handle_view(self, name, **kwargs):
+        """
+        Override builtin _handle_view in order to redirect users when a view is not accessible.
+        """
+        if not self.is_accessible():
+            if current_user.is_authenticated:
+                # permission denied
+                abort(403)
+            else:
+                # login
+                return redirect(url_for('security.login', next=request.url))
+
+admin_bp.add_view(AdminDbClientReqTaskStatsView(CReqTaskStatsTb, db.session, name='请求统计',endpoint='creq-task-stats',category='统计'))
+
 
 # BufferView
 class BufferView(admin.BaseView):

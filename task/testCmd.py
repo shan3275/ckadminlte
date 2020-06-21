@@ -67,6 +67,19 @@ class Cli(Cmd):
     def help_taskstat(self):
         print '将任务统计写入数据库表项中，输入参数：2020-06-09 20:28:00'
 
+    def do_creqtaskstat(self,arg):
+        if arg == '':
+            print '输入时间，例如：2020-06-09 20:28:00'
+            return
+        #转换成时间数组
+        timeArray = time.strptime(arg, "%Y-%m-%d %H:%M:%S")
+        print timeArray
+        timestamp = time.mktime(timeArray)
+        taskCommon.collectClientRequestTaskStatsByHour(timestamp)
+
+    def help_creqtaskstat(self):
+        print '将请求统计写入数据库表项中，输入参数：2020-06-09 20:28:00'
+
 if __name__ == "__main__":
     reload(sys)
     sys.setdefaultencoding('utf8')

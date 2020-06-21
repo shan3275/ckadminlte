@@ -7,7 +7,7 @@ import struct
 from cmd import Cmd
 import platform,os
 import sys,time
-import random
+import random,string
 import requests
 import threading
 import threadpool
@@ -112,10 +112,14 @@ def getCK(url):
     L2.release()
 
 def task_th(id):
+    global Success
+    global Fail
+    global None_Task
     HOST = CONF['host']
     PORT = CONF['port']
     BUFSIZ = 1024
-    UID = 'bdc5e03cf80abee9e0103d44'
+    #UID = 'bdc5e03cf80abee9e0103d44'
+    UID = ''.join(random.sample(string.ascii_letters + string.digits, 24))
     client = socket.socket()
     client.connect((HOST, PORT))
     data = struct.pack("!BI24s", 6, 5, UID)
@@ -124,6 +128,7 @@ def task_th(id):
     recvData = client.recv(BUFSIZ)
     data = encode_data(recvData)
     if len(data) > 10:
+        Success = Success + 1
         fmt = '!BIBH%dsI' %(len(data)-12)
         msgid, tid, parallel,length,content,mid = struct.unpack(fmt, data)
         #print 'msgid   : ' , msgid
@@ -131,13 +136,18 @@ def task_th(id):
         #print 'parallel: ' , parallel
         #print 'length  : ' , length
         #print 'content : ' , content
+        logger.info('msgid: %s', msgid)
+        logger.info('tid: %s', tid)
+        logger.info('parallel: %s', parallel)
+        logger.info('length: %s', length)
+        logger.info('content: %s', content)
         url = getCKUrl(content)
-        getCK(url)
+        logger.info(url)
+        #getCK(url)
     else:
         msgid,tid =  struct.unpack('!BI', data)
         #print 'msgid   : ' , msgid
         #print 'tid     : ' , tid
-        global None_Task
         None_Task =  None_Task +1
     client.close()
 
@@ -157,13 +167,13 @@ def DisplayLoginInfo(num):
         result_str = 'Needs: ' + num_str + ' Success: ' + success_str + ' Fail: ' + fail_str + ' None: ' + none_str
         sys.stdout.write("\r{0}".format(result_str))
         sys.stdout.flush()
-        if num == (Success+Fail):
+        if num == (Success+Fail+None_Task):
             print('\n')
             logger.info('DisplayLoginInfo exit')
             break
         time.sleep(2)
 
-def autoGetTask(num=100000):
+def autoGetTask(num=2000):
     index = 0
     global Success
     global Fail
@@ -174,14 +184,14 @@ def autoGetTask(num=100000):
     t = threading.Thread(target=DisplayLoginInfo, args=(num, ) )
     t.start()
     pool = threadpool.ThreadPool(CONF['ThreadNum'])
-    while True:
-        acc_list = list()
-        for i in range(0, num):
-            acc_list.append(i)
-        logger.info(acc_list)
-        requests = threadpool.makeRequests(task_th, acc_list)
-        [pool.putRequest(req) for req in requests]
-        pool.wait()
+    #while True:
+    acc_list = list()
+    for i in range(0, num):
+        acc_list.append(i)
+    logger.info(acc_list)
+    requests = threadpool.makeRequests(task_th, acc_list)
+    [pool.putRequest(req) for req in requests]
+    pool.wait()
 
 class Cli(Cmd):
     u"""help

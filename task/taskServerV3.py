@@ -5,7 +5,6 @@ import socket
 import sys
 import time
 import thread
-import time
 import struct
 import inits
 import globalvar as gl
@@ -36,19 +35,27 @@ def assemblPayload(msgid, task):
 
 def processDeal(msgid,pid,uid):
     ou = dict(error=0,msg='ok',data=dict())
+    taskstatstr = time.strftime('%Y%m%d%H')
+
     if pid != 5:
+        crack = libredis.LibRedis(CONF['redis']['taskstatdb'])
+        crack.hashincr(taskstatstr,'total')
+        crack.hashincr(taskstatstr,'piderr')
         ou['error'] = 1
         ou['msg']   = 'product id error!'
         return ou
-
+    
     #获取一个任务
     ou1 = taskCommon.getOneTask()
+    crack = libredis.LibRedis(CONF['redis']['taskstatdb'])
     if ou1['error'] != 0:
+        crack.hashincr(taskstatstr,'notask')
         #没有任务
         #logger.info('没有获取到任务，当前没有任务')
         data = struct.pack("!BI", msgid, 0)
         ou['data']['has_task'] = 0
     else:
+        crack.hashincr(taskstatstr,'task')
         #获取到了任务
         #logger.info('获取到了任务')
         data = assemblPayload(msgid,ou1['data'])
@@ -57,6 +64,9 @@ def processDeal(msgid,pid,uid):
     ou['error'] = 0
     ou['msg'] = 'ok'
     ou['data']['payload'] = decode_data(data)
+    #统计uid数量
+    crack.setAdd(taskstatstr+'un', uid)
+    crack.hashincr(taskstatstr,'total')
     return ou
 
 def decode_data(data):
