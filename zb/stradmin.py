@@ -523,6 +523,7 @@ class AdminDbClientReqTaskStatsView(sqla.ModelView):
                          uid_num='唯一用户数',
                          create_time='创建时间')
     #column_filters = ('period') 
+    column_default_sort = ('id', True)
     def is_accessible(self):
         return (current_user.is_active and
                 current_user.is_authenticated and
@@ -607,7 +608,7 @@ class BufferView(admin.BaseView):
         libcommon.moveTaskFromRedistoDB()
         return "move success!"
       
-admin_bp.add_view(BufferView(name='缓存Cookie',endpoint='redis-cookies',category='Cookies'))
+#admin_bp.add_view(BufferView(name='缓存Cookie',endpoint='redis-cookies',category='Cookies'))
 
 # Create models
 class Cookie(db.Model):
@@ -716,7 +717,7 @@ class SupplierAdmin(sqla.ModelView):
                 (current_user.has_role('superuser') or current_user.has_role('user'))
         )
 
-admin_bp.add_view(SupplierAdmin(Supplier,  db.session,name='Cookie供应商', endpoint='Supplier', category='Cookies'))
+#admin_bp.add_view(SupplierAdmin(Supplier,  db.session,name='Cookie供应商', endpoint='Supplier', category='Cookies'))
 
 #Group models
 from wtforms import IntegerField, FloatField, StringField, SelectField, DateField, DateTimeField, FileField, TextAreaField, form, Form
@@ -824,7 +825,7 @@ class GroupAdmin(sqla.ModelView):
                 (current_user.has_role('superuser') or current_user.has_role('user'))
         )
 
-admin_bp.add_view(GroupAdmin(Group,  db.session,name='Cookie组', endpoint='Group', category='Cookies'))
+#admin_bp.add_view(GroupAdmin(Group,  db.session,name='Cookie组', endpoint='Group', category='Cookies'))
 
 # Custom
 class Custom(db.Model):
@@ -863,7 +864,7 @@ class CustomAdmin(sqla.ModelView):
                 (current_user.has_role('superuser') or current_user.has_role('user'))
         )
             
-admin_bp.add_view(CustomAdmin(Custom,  db.session,name='客户', endpoint='Custom',category='需求'))
+#admin_bp.add_view(CustomAdmin(Custom,  db.session,name='客户', endpoint='Custom',category='需求'))
 
 # Orders
 
@@ -957,7 +958,7 @@ class OrderAdmin(sqla.ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求列表',endpoint='Orders',category='需求'))
+#admin_bp.add_view(OrderAdmin(Orders, db.session,name='需求列表',endpoint='Orders',category='需求'))
 
 # Create custom admin view
 class CreateTaskView(admin.BaseView):
