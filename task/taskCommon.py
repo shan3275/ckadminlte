@@ -450,6 +450,9 @@ def collectClientRequestTaskStatsByHour(hour):
     create_time      = int(time.time())
     crack = libredis.LibRedis(CONF['redis']['taskstatdb'])
     taskstatstr = time.strftime("%Y%m%d%H", time.localtime(hour))
+    #设置老化时间
+    crack.expire(taskstatstr,      36000)
+    crack.expire(taskstatstr+'un', 36000)
     record = crack.hashGetAll(taskstatstr)
     if record != None:
         logger.info(record)

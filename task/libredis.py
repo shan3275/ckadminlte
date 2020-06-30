@@ -26,6 +26,15 @@ class LibRedis():
         :return: 删除成功个数，0 or 1 or 其他
         """
         return self.redis.delete(*names)
+    
+    def expire(self, name, time):
+        """
+        设置老化时间
+        :param  name
+        :param  time 秒为单位
+        :return : 成功为1，失败为0
+        """
+        return self.redis.expire(name,time)
 
     def strSet(self, key, value):
         """
