@@ -164,7 +164,7 @@ def getOneTask():
     else:
         logger.info('当前task 不满足时间条件，不可以提交')
         logger.info('当前task 放回队列')
-        TaskList.append(task)
+        #TaskList.append(task)
         ou['error'] = 1
         ou['msg']   = 'no task'
     return ou
